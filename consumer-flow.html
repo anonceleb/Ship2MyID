@@ -294,14 +294,20 @@
         <div class="result" data-result="compare"></div>
       </div>
       <div class="attack-card">
-        <div class="a-title">Request a cohort of 3 buyers</div>
-        <div class="a-desc">Ask the marketing API for a narrow audience segment.</div>
-        <button class="attack-btn" data-attack="cohort">Run</button>
-        <div class="result" data-result="cohort"></div>
+        <div class="a-title">Query a cohort</div>
+        <div class="a-desc">The one rule §6.4's brand-bidding pitch depends on: ask for a group this small, then one that clears the floor.</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="attack-btn" data-attack="cohort-small">Ask for 3</button>
+          <button class="attack-btn" data-attack="cohort-floor">Ask for 40</button>
+        </div>
+        <div class="result" data-result="cohort-small"></div>
+        <div class="result" data-result="cohort-floor"></div>
       </div>
     </div>
 
-    <button class="btn ghost" id="btn-to-return" style="margin-top:36px;">See what happens when it goes wrong <span class="arrow">→</span></button>
+    <p class="beat-sub" style="margin-top:26px; font-size:13px;">That check is real — <code>cohortSize()</code>, the same k-anonymity floor <code>packages/core</code> exports and <code>tests/invariants</code> asserts against. Spec §6.4 also describes consumer-declared intent, brands bidding into the cohort, and offer delivery — none of that is wired into this demo. This is the one guarantee under that pitch that's actually proven here; the rest is roadmap, not a running system.</p>
+
+    <button class="btn ghost" id="btn-to-return" style="margin-top:20px;">See what happens when it goes wrong <span class="arrow">→</span></button>
   </section>
 
   <!-- =================================================== RETURN ===== -->
@@ -484,6 +490,15 @@
     void el.offsetWidth;
     el.classList.add("show");
   }
+  // Same rendering as showResult(), with an explicit label — DENIED/UNLINKED
+  // don't fit every real outcome (a disclosed cohort isn't "unlinked").
+  function showLabeled(key, cls, label, reason){
+    const el = document.querySelector(`.result[data-result="${key}"]`);
+    el.innerHTML = `<span class="stamp-mark ${cls}">${label}</span><span class="result-text">${reason}</span>`;
+    el.classList.remove("show");
+    void el.offsetWidth;
+    el.classList.add("show");
+  }
 
   document.querySelectorAll(".attack-btn").forEach(btn=>{
     btn.addEventListener("click", async () => {
@@ -512,16 +527,18 @@
         const score = linkability(s2idA, s2idB);
         showResult("compare", false, `Merchant B holds ${s2idB} — linkability score ${score}. Same person, no shared key.`);
       }
-      if (kind === "cohort"){
-        // This session has exactly one declared buyer — cohortSize() runs
-        // for real against that count, the same function packages/core
-        // exports, not a hardcoded "3 < 25" string.
-        const matching = 3; // the marketing API's own narrow-segment ask
+      if (kind === "cohort-small" || kind === "cohort-floor"){
+        // cohortSize() runs for real against each count — the same
+        // function packages/core exports and tests/invariants asserts
+        // against (INV-7), not two hardcoded strings for two hardcoded
+        // outcomes.
+        const matching = kind === "cohort-small" ? 3 : 40;
         const size = cohortSize(matching);
-        showResult("cohort", size === 0,
-          size === 0
-            ? `cohort size ${matching} < k-anonymity floor of ${K_ANON_FLOOR} — not disclosed.`
-            : `cohort of ${size} disclosed.`);
+        if (size === 0){
+          showLabeled(kind, "deny", "DENIED", `cohort size ${matching} < k-anonymity floor of ${K_ANON_FLOOR} — not disclosed.`);
+        } else {
+          showLabeled(kind, "pass", "DISCLOSED", `cohort of ${size} clears the floor — a count only, never a name or an S2ID.`);
+        }
       }
     });
   });
