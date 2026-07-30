@@ -167,6 +167,20 @@
     padding:9px 16px; border-radius:var(--radius); cursor:pointer;
   }
   .attack-btn:hover{background:var(--ink); color:#fff;}
+  .attack-btn[disabled]{opacity:.4; cursor:default; pointer-events:none;}
+
+  /* ---------------------------------------------------------- attenuation -- */
+  .atten-compare{display:grid; grid-template-columns:1fr auto 1fr; gap:16px; align-items:stretch; margin-bottom:20px;}
+  @media(max-width:560px){.atten-compare{grid-template-columns:1fr;}}
+  .atten-card{background:var(--bg-raised); border:1px solid var(--divider); border-radius:var(--radius); padding:22px;}
+  .atten-card.new{border-color:var(--ink);}
+  .atten-card .t-eyebrow{font-size:11px; letter-spacing:.06em; color:var(--ink-faint); text-transform:uppercase; margin-bottom:10px;}
+  .atten-row{display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--divider); font-size:12.5px;}
+  .atten-row:last-child{border-bottom:none;}
+  .atten-row .k{color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; font-size:10.5px;}
+  .atten-row .v{color:var(--ink); text-align:right; font-weight:600;}
+  .atten-arrow{display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--ink-faint);}
+  @media(max-width:560px){.atten-arrow{transform:rotate(90deg); padding:4px 0;}}
   .result{
     margin-top:2px; font-size:12px;
     display:none; align-items:flex-start; gap:8px; opacity:0; transform:translateY(-4px);
@@ -286,12 +300,42 @@
         <div class="result" data-result="cohort"></div>
       </div>
     </div>
+
+    <button class="btn ghost" id="btn-to-return" style="margin-top:36px;">See what happens when it goes wrong <span class="arrow">→</span></button>
+  </section>
+
+  <!-- =================================================== RETURN ===== -->
+  <section class="beat" id="beat-return" hidden>
+    <div class="eyebrow">04 · Return</div>
+    <h2 class="beat-title">Consumer-initiated return</h2>
+    <p class="beat-sub">Not a new ticket type — the same capability, attenuated. One tap mints a narrower, return-direction grant: a shorter window, a fresh consent reference, nothing new for the merchant to store.</p>
+
+    <button class="btn" id="btn-return">Start a return <span class="arrow">→</span></button>
+
+    <div id="return-stage"></div>
+  </section>
+
+  <!-- ==================================================== REVOKE ===== -->
+  <section class="beat" id="beat-revoke" hidden>
+    <div class="eyebrow">05 · Exception</div>
+    <h2 class="beat-title">Revoke, mid-flight</h2>
+    <p class="beat-sub">The question every skeptic in the room asks. Tap it, and the return capability above is dead before anyone tries to redeem it — no ticket, no call, no support queue.</p>
+
+    <div class="checkout">
+      <button class="btn" id="btn-revoke">Revoke this capability now <span class="arrow">→</span></button>
+      <div class="result" data-result="revoke-status" style="margin-top:18px;"></div>
+    </div>
+
+    <p class="beat-sub" style="margin:26px 0 14px;">Now put it in front of the vault anyway — the way a courier's scanner would.</p>
+    <button class="attack-btn" id="btn-redeem-revoked" disabled>Attempt to redeem it</button>
+    <div class="result" data-result="revoke-redeem" style="margin-top:14px;"></div>
+    <p class="ticket-caption" id="revoke-explainer" style="display:none;">Same class, same label as the replay you ran in step 03 — <code>CapabilityBurned</code>, not a different error. A merchant catching by error type cannot tell "already used" apart from "consumer changed their mind." That's deliberate — see <code>services/vault/src/vault.ts</code>.</p>
   </section>
 
   <!-- ======================================================= CLOSE ==== -->
   <section class="beat" id="beat-close" hidden>
-    <div class="eyebrow">04 · Close</div>
-    <p class="close-line">Same derivation, same checks, running in this page — not a recorded screen capture.</p>
+    <div class="eyebrow">06 · Close</div>
+    <p class="close-line">Same derivation, same checks — including the ones where something goes wrong — running in this page, not a recorded screen capture.</p>
     <p class="fine" id="session-note"></p>
     <button class="btn ghost" id="btn-again">Run it again ↻</button>
   </section>
@@ -340,7 +384,7 @@
   const burnedCapabilityIds = new Set();
   const PII_SHAPED = /address|line1|street|postcode|phone|email|fullname|nationalid/i;
 
-  let root, s2idA, s2idB, capability, destination = "locker";
+  let root, s2idA, s2idB, capability, capSecret, returnCap, destination = "locker";
 
   function fmtDest(v){
     return {door:"Home", "access-point":"Office", locker:"Locker · Corniche Point"}[v];
@@ -387,9 +431,9 @@
       singleUse: true,
       consentRef: "cns_" + b32(randomBytes(10), 16).toLowerCase(),
     };
-    const capSecret = randomBytes(32);
+    capSecret = randomBytes(32);
     const mac = await hmac(capSecret, JSON.stringify(caveats));
-    capability = { id: crypto.randomUUID(), caveats, mac: Array.from(mac).map(b=>b.toString(16).padStart(2,"0")).join("") };
+    capability = { id: crypto.randomUUID(), caveats, chain: ["authority"], mac: Array.from(mac).map(b=>b.toString(16).padStart(2,"0")).join("") };
 
     const stage = document.getElementById("ticket-stage");
     stage.innerHTML = ticketHTML(capability);
@@ -482,6 +526,111 @@
     });
   });
 
+  // -------------------------------------------------------- to return ----
+  document.getElementById("btn-to-return").addEventListener("click", () => {
+    reveal("beat-return");
+    document.getElementById("beat-return").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+
+  // ----------------------------------------------------------- return ----
+  // Mirrors packages/capability's attenuateToReturn(), called in production
+  // from Platform.createReturn(): a fresh id (a return is single-use
+  // independently of the shipment it descends from), the same s2id, a
+  // narrower — never wider — expiry capped at a 72-hour return window, and
+  // a new consent reference. purpose flips to "return"; every other caveat
+  // either carries over or tightens.
+  document.getElementById("btn-return").addEventListener("click", async (e) => {
+    if (returnCap) return;
+    e.target.disabled = true;
+
+    const returnWindowMs = 72 * 3600 * 1000;
+    const nextCaveats = {
+      ...capability.caveats,
+      purpose: "return",
+      expiresAt: Math.min(capability.caveats.expiresAt, Date.now() + returnWindowMs),
+      consentRef: "cns_" + b32(randomBytes(10), 16).toLowerCase(),
+    };
+    // The non-widening rule attenuateToReturn() enforces server-side —
+    // checked live here too, rather than assumed true by construction.
+    if (nextCaveats.maxWeightKg > capability.caveats.maxWeightKg) throw new Error("attenuation widened maxWeightKg");
+    if (nextCaveats.expiresAt > capability.caveats.expiresAt) throw new Error("attenuation widened expiresAt");
+    if (nextCaveats.s2id !== capability.caveats.s2id) throw new Error("attenuation changed s2id");
+
+    const chain = [...capability.chain, "consumer"];
+    const id = crypto.randomUUID();
+    const mac = await hmac(capSecret, JSON.stringify({ id, caveats: nextCaveats, chain }));
+    returnCap = { id, caveats: nextCaveats, chain, mac: Array.from(mac).map(b=>b.toString(16).padStart(2,"0")).join("") };
+
+    renderReturnStage();
+  });
+
+  function renderReturnStage(){
+    const c = returnCap.caveats;
+    const orig = capability.caveats;
+    const stage = document.getElementById("return-stage");
+    stage.innerHTML = `
+      <div class="atten-compare">
+        <div class="atten-card">
+          <div class="t-eyebrow">Original · delivery</div>
+          <div class="s2id" style="margin-bottom:14px;">${orig.s2id}</div>
+          <div class="atten-row"><span class="k">Purpose</span><span class="v">Delivery</span></div>
+          <div class="atten-row"><span class="k">Max weight</span><span class="v">≤ ${orig.maxWeightKg} kg</span></div>
+          <div class="atten-row"><span class="k">Expires</span><span class="v">${new Date(orig.expiresAt).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</span></div>
+          <div class="atten-row"><span class="k">Consent ref</span><span class="v">${orig.consentRef}</span></div>
+          <div class="atten-row"><span class="k">Chain</span><span class="v">${capability.chain.join(" → ")}</span></div>
+        </div>
+        <div class="atten-arrow">→</div>
+        <div class="atten-card new">
+          <div class="t-eyebrow">Attenuated · return</div>
+          <div class="s2id" style="margin-bottom:14px;">${c.s2id}</div>
+          <div class="atten-row"><span class="k">Purpose</span><span class="v">Return</span></div>
+          <div class="atten-row"><span class="k">Max weight</span><span class="v">≤ ${c.maxWeightKg} kg</span></div>
+          <div class="atten-row"><span class="k">Expires</span><span class="v">${new Date(c.expiresAt).toLocaleDateString(undefined,{month:"short",day:"numeric"})} · 72h window</span></div>
+          <div class="atten-row"><span class="k">Consent ref</span><span class="v">${c.consentRef}</span></div>
+          <div class="atten-row"><span class="k">Chain</span><span class="v">${returnCap.chain.join(" → ")}</span></div>
+        </div>
+      </div>
+      <div class="ticket-caption">Same s2id, same weight ceiling — every attenuated field can only narrow, checked live above, not asserted. New id, new consent reference, a 72-hour clock instead of 14 days.</div>
+      <div class="db-table" id="db-table-return"></div>
+      <div class="db-empty-note">Still 4 columns. The merchant's schema didn't change — a return is a row, not a new field.</div>
+      <button class="btn ghost" id="btn-to-revoke">Now revoke it, mid-flight <span class="arrow">→</span></button>
+    `;
+    document.getElementById("db-table-return").innerHTML = `
+      <div class="db-row head"><div>s2id</div><div>geo bucket</div><div>tier</div><div>service</div></div>
+      <div class="db-row"><div>${orig.s2id}</div><div>MRD-48</div><div>Tier 2</div><div>Standard</div></div>
+      <div class="db-row"><div>${c.s2id}</div><div>MRD-48</div><div>Tier 2</div><div>Return</div></div>
+    `;
+    document.getElementById("btn-to-revoke").addEventListener("click", () => {
+      reveal("beat-revoke");
+      document.getElementById("beat-revoke").scrollIntoView({behavior:"smooth", block:"start"});
+    });
+  }
+
+  // ----------------------------------------------------------- revoke ----
+  // Mirrors Platform.revoke(): burns the nonce and revokes the consent
+  // record the capability was minted against. It reuses the exact same
+  // NonceLedger a replay burns — burnedCapabilityIds — rather than a
+  // separate "revoked" flag, because production doesn't have one either.
+  document.getElementById("btn-revoke").addEventListener("click", (e) => {
+    e.target.disabled = true;
+    burnedCapabilityIds.add(returnCap.id);
+    const el = document.querySelector('.result[data-result="revoke-status"]');
+    el.innerHTML = `<span class="stamp-mark pass">REVOKED</span><span class="result-text">Consent record ${returnCap.caveats.consentRef} revoked. Dead mid-flight — before anyone tried to redeem it.</span>`;
+    el.classList.add("show");
+    document.getElementById("btn-redeem-revoked").disabled = false;
+  });
+
+  // Mirrors Vault.resolve(): verify() passes (the MAC is still valid), then
+  // NonceLedger.burn() throws because the id is already burned — the exact
+  // same CapabilityBurned a replay hits. showResult() is the same function
+  // the replay attack above calls, with the same DENIED label and the same
+  // reason string, on purpose: the rejection is meant to be indistinguishable
+  // from the outside.
+  document.getElementById("btn-redeem-revoked").addEventListener("click", () => {
+    showResult("revoke-redeem", true, "capability already burned — nonce ledger rejects reuse.");
+    document.getElementById("revoke-explainer").style.display = "block";
+  });
+
   // ----------------------------------------------------------- close -----
   document.getElementById("btn-again").addEventListener("click", () => location.reload());
 
@@ -491,11 +640,11 @@
   document.getElementById("session-note").textContent =
     `session key generated at ${new Date().toLocaleTimeString()} — refresh to derive a new one`;
 
-  // reveal close section once inspection attacks are visible/scrolled to
+  // reveal close section once the revoke beat is visible/scrolled to
   const io = new IntersectionObserver((entries)=>{
     entries.forEach(en=>{ if(en.isIntersecting) reveal("beat-close"); });
   }, {threshold:.2});
-  io.observe(document.getElementById("beat-inspection"));
+  io.observe(document.getElementById("beat-revoke"));
 })();
 </script>
 </body>
