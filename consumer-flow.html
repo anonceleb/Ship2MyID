@@ -4,8 +4,6 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ship2MyID — the address that was never asked for</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
     --paper:#E7E3D8;
@@ -29,6 +27,10 @@
     -webkit-font-smoothing:antialiased;
   }
   ::selection{background:var(--stamp); color:var(--paper);}
+
+  .topnav{max-width:760px; margin:0 auto; padding:28px 24px 0; display:flex; justify-content:space-between; align-items:center;}
+  .topnav a{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft); text-decoration:none;}
+  .topnav a:hover{color:var(--ink);}
 
   .wrap{max-width:760px; margin:0 auto; padding:0 24px 140px;}
 
@@ -79,9 +81,10 @@
   section.beat{
     border-top:1px solid var(--line);
     padding:56px 0 8px;
-    opacity:.25; filter:saturate(.5);
+    opacity:0; filter:saturate(.5);
     transition:opacity .5s ease, filter .5s ease;
   }
+  section.beat[hidden]{display:none;}
   section.beat.active{opacity:1; filter:none;}
   section.beat .eyebrow{margin-bottom:14px;}
   h2.beat-title{
@@ -194,6 +197,10 @@
 </head>
 <body>
 <div class="grain"></div>
+<div class="topnav">
+  <a href="./index.html">← Choose a different flow</a>
+  <a href="./operator-flow.html">See the operator flow →</a>
+</div>
 <div class="wrap">
 
   <header class="hero">
@@ -204,7 +211,7 @@
   </header>
 
   <!-- ================================================== DISPATCH ===== -->
-  <section class="beat" id="beat-dispatch">
+  <section class="beat" id="beat-dispatch" hidden>
     <div class="eyebrow">DISPATCH</div>
     <h2 class="beat-title">Checkout</h2>
     <p class="beat-sub">A normal order, at a normal merchant. Watch the field that's missing.</p>
@@ -237,7 +244,7 @@
   </section>
 
   <!-- ================================================== MANIFEST ===== -->
-  <section class="beat" id="beat-manifest">
+  <section class="beat" id="beat-manifest" hidden>
     <div class="eyebrow">MANIFEST</div>
     <h2 class="beat-title">What the merchant is holding</h2>
     <p class="beat-sub">This ticket is the entire transaction, from the merchant's side. It routes a parcel. It cannot be read as a place.</p>
@@ -245,7 +252,7 @@
   </section>
 
   <!-- ================================================= INSPECTION ===== -->
-  <section class="beat" id="beat-inspection">
+  <section class="beat" id="beat-inspection" hidden>
     <div class="eyebrow">INSPECTION</div>
     <h2 class="beat-title">The merchant's entire record</h2>
     <p class="beat-sub">Every column that exists, on a live table. Nothing is hidden below the fold — this is all of it.</p>
@@ -285,7 +292,7 @@
   </section>
 
   <!-- ======================================================= CLOSE ==== -->
-  <section class="beat" id="beat-close">
+  <section class="beat" id="beat-close" hidden>
     <div class="eyebrow">CLOSE</div>
     <p class="close-line">Same derivation, same checks, running in this page — not a recorded screen capture.</p>
     <p class="fine" id="session-note"></p>
@@ -343,7 +350,11 @@
   }
 
   function reveal(id){
-    document.getElementById(id).classList.add("active");
+    const el = document.getElementById(id);
+    el.hidden = false;
+    // Two rAFs so the browser paints the unhidden state first — otherwise
+    // the opacity transition to .active has nothing to animate from.
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add("active")));
   }
 
   // ---------------------------------------------------------- chips ------
@@ -477,11 +488,11 @@
   // ----------------------------------------------------------- close -----
   document.getElementById("btn-again").addEventListener("click", () => location.reload());
 
-  window.addEventListener("load", () => {
-    document.getElementById("session-note").textContent =
-      `session key generated at ${new Date().toLocaleTimeString()} — refresh to derive a new one`;
-    reveal("beat-close");
-  });
+  // Session note text is prepared now but the section stays hidden — only
+  // set here, not revealed here — so nothing below the fold is visible
+  // before the user actually reaches inspection.
+  document.getElementById("session-note").textContent =
+    `session key generated at ${new Date().toLocaleTimeString()} — refresh to derive a new one`;
 
   // reveal close section once inspection attacks are visible/scrolled to
   const io = new IntersectionObserver((entries)=>{
