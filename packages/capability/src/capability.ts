@@ -47,6 +47,19 @@ export function mint(secret: Buffer, caveats: Caveats): Capability {
 }
 
 /**
+ * The narrowing checks every attenuation path shares: weight, expiry, s2id,
+ * and single-use may only ever tighten. Factored out so the return-purpose
+ * transition below enforces the identical rule rather than a hand-rolled
+ * second check.
+ */
+function assertNotWidened(next: Caveats, prev: Caveats): void {
+  if (next.maxWeightKg > prev.maxWeightKg) throw new AttenuationWidened("maxWeightKg");
+  if (next.expiresAt > prev.expiresAt) throw new AttenuationWidened("expiresAt");
+  if (next.s2id !== prev.s2id) throw new AttenuationWidened("s2id");
+  if (prev.singleUse && !next.singleUse) throw new AttenuationWidened("singleUse");
+}
+
+/**
  * Every field may only narrow. This is enforced here rather than trusted,
  * because the returns path is exactly where a naive implementation re-widens a
  * grant and leaks what the happy path protected.
@@ -58,13 +71,37 @@ export function attenuate(
   by: string,
 ): Capability {
   const next: Caveats = { ...cap.caveats, ...narrower };
-  if (next.maxWeightKg > cap.caveats.maxWeightKg) throw new AttenuationWidened("maxWeightKg");
-  if (next.expiresAt > cap.caveats.expiresAt) throw new AttenuationWidened("expiresAt");
-  if (next.s2id !== cap.caveats.s2id) throw new AttenuationWidened("s2id");
+  assertNotWidened(next, cap.caveats);
   if (next.purpose !== cap.caveats.purpose) throw new AttenuationWidened("purpose");
-  if (cap.caveats.singleUse && !next.singleUse) throw new AttenuationWidened("singleUse");
   const chain = [...cap.chain, by];
   return { id: cap.id, caveats: next, chain, mac: macOf(secret, next, chain) };
+}
+
+/**
+ * The one sanctioned purpose transition: a shipment's return leg (spec
+ * §6.2). `attenuate()` itself must keep rejecting *any* purpose change,
+ * including this exact one — INV-11 asserts that directly, because generic
+ * attenuation by an arbitrary holder ("courier-7") re-purposing a grant is
+ * exactly the bug this system exists to prevent. A return is only ever
+ * reachable through Platform.createReturn, never through attenuate() itself,
+ * so the transition lives in its own function — one that reuses the same
+ * assertNotWidened() narrowing rule, so a return still can never exceed the
+ * shipment that created it.
+ */
+export function attenuateToReturn(
+  secret: Buffer,
+  cap: Capability,
+  narrower: Partial<Omit<Caveats, "purpose">>,
+  by: string,
+): Capability {
+  if (cap.caveats.purpose !== "delivery") throw new AttenuationWidened("purpose");
+  const next: Caveats = { ...cap.caveats, ...narrower, purpose: "return" };
+  assertNotWidened(next, cap.caveats);
+  const chain = [...cap.chain, by];
+  // A fresh id: a return is a distinct grant, single-use independently of
+  // the shipment it descends from — sharing an id would couple their nonce
+  // burns and let redeeming one silently invalidate the other.
+  return { id: randomUUID(), caveats: next, chain, mac: macOf(secret, next, chain) };
 }
 
 export function verify(secret: Buffer, cap: Capability, now = Date.now()): void {

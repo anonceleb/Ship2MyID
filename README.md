@@ -7,7 +7,7 @@ tokens, and the executable privacy invariants.
 Node ≥ 22.6 only — TypeScript executes via native type stripping.
 
 ```bash
-npm run verify   # privacy-lint + all 13 invariants
+npm run verify   # privacy-lint + all invariants (INV-1..18, A4, non-widening)
 npm run demo     # narrated end-to-end ship flow
 ```
 
@@ -58,6 +58,11 @@ tests/invariants/  the privacy claims, executable
 | INV-11 | Attenuation may narrow a grant but never widen it |
 | INV-12 | Co-residents cannot enumerate each other through a shared address |
 | INV-13 | Ciphertext moved between records fails closed |
+| INV-14 | A return capability may never exceed the shipment capability's scope |
+| INV-15 | Failed delivery notifies the consumer, never the merchant |
+| INV-16 | Revocation kills a capability the merchant believes is still valid |
+| INV-17 | A redirect issues a fresh capability without telling the merchant the destination changed |
+| INV-18 | Refund-without-return makes zero vault calls |
 
 Both CI gates are proven non-vacuous: injecting `address: string` into `MerchantView`
 makes privacy-lint exit 1, and each invariant asserts the failure mode as well as the
@@ -68,6 +73,33 @@ by a rotating operator key, over claims derived from an already-verified capabil
 `tests/invariants/label.test.ts` proves it offline-verifiable with cached public keys
 alone (no vault, no network), rejects tampering and out-of-window keys, expires, and
 never carries an address — a contact channel, if present, travels only as a sha256 hash.
+
+**Phase 2 — Exceptions — done.** Returns, failed delivery, revocation, redirect, and
+refund (spec §6.2), all built so the exception path can never grant more than the
+shipment that created it:
+
+- `Platform.createReturn()` mints via a new `attenuateToReturn()` in
+  `packages/capability`, not a fresh `mint()` — narrowing is enforced by the same
+  `AttenuationWidened` check `attenuate()` uses, factored into a shared
+  `assertNotWidened()`. `attenuate()` itself still rejects *any* purpose change,
+  including this one (INV-11) — the transition is reachable only through
+  `Platform.createReturn`.
+- `NotificationPort` (`packages/core`) + `Vault.notifyFailedDelivery()` — a vault
+  method, not a platform one, so the merchant-facing service has no code path to a
+  consumer's notification channel at all. Notifies by `subjectRef`, never a merchant id.
+- `Platform.revoke()` burns the nonce (`NonceLedger.revoke()`) and revokes the consent
+  record a capability was minted against (`ConsentLedger.revoke()`, a new side-set next
+  to the hash chain — revocation is a side-effect, not a correction to history). A
+  revoked capability fails `Vault.resolve()` through the same `isValidFor()` check a
+  replay does, so a merchant can't tell the two apart from the error alone.
+- `Platform.redirectDelivery()` changes only `destinationKind`; weight and expiry are
+  carried over unchanged (no override exists for either), so there's no surface to widen.
+- `Platform.refund()` never calls `Vault.resolve()` — no vault call exists to skip, by
+  construction, not because one was suppressed.
+
+`tests/invariants/exceptions-nonwidening.test.ts` asks the non-widening question the
+other direction: through the real `Platform` API, and directly against the attenuation
+primitives underneath it.
 
 ## Known Phase 0 shortcuts
 
@@ -85,6 +117,7 @@ Stated plainly so they don't get mistaken for design:
 
 ## Next
 
-Phase 1: Rust vault, Postgres + RLS, SD-JWT VC issuance, signed Rego disclosure
-policies, async callbacks, consumer "what we hold" view. COSE offline labels ([A4])
-are done — see `packages/labels`.
+Phase 1 remaining: Rust vault, Postgres + RLS, SD-JWT VC issuance, signed Rego
+disclosure policies ([A9]), async callbacks ([A10]), consumer "what we hold" view.
+COSE offline labels ([A4]) and Phase 2 (Exceptions — returns, failed delivery,
+revocation, redirect, refund) are done.

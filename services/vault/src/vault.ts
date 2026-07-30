@@ -23,6 +23,7 @@ import {
   AuditLog,
   ConsentLedger,
   type AddressPlaintext,
+  type NotificationPort,
   type SortationPort,
 } from "../../../packages/core/src/core.ts";
 import { OperatorKeyring, type OperatorPublicKey } from "../../../packages/labels/src/keyring.ts";
@@ -163,6 +164,21 @@ export class Vault {
       }
     }
     return erased;
+  }
+
+  /**
+   * §6.2 failed delivery: "platform notifies *consumer* (never the merchant)".
+   * Deliberately a vault method — the merchant-facing platform never gets a
+   * subjectRef to notify, because it never holds one. The vault already
+   * carries the s2id -> record -> subjectRef mapping (Zone 1 only); this is
+   * the one place that mapping can be used without exposing it upward.
+   */
+  notifyFailedDelivery(cap: Capability, notifications: NotificationPort, event = "failed-delivery"): void {
+    verifyCap(this.#capSecret, cap);
+    const recordId = this.#bindings.get(cap.caveats.s2id);
+    if (!recordId) throw new Error("no binding for s2id");
+    const rec = this.#records.get(recordId)!;
+    notifications.notify(rec.subjectRef, event);
   }
 
   tryRead(recordId: string): AddressPlaintext {

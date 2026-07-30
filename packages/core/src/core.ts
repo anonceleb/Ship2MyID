@@ -32,6 +32,14 @@ export type ConsentEntry = {
  */
 export class ConsentLedger {
   #entries: ConsentEntry[] = [];
+  /**
+   * Revoked refs, tracked outside the hash chain itself — same shape as
+   * NonceLedger's burned set. Revocation is a side-effect of an event
+   * (the consumer pulling a capability mid-flight), not a correction to
+   * history, so it must never mutate an existing entry: that would break
+   * the entry's own hash and defeat tamper-evidence for the wrong reason.
+   */
+  #revoked = new Set<string>();
 
   append(e: Omit<ConsentEntry, "seq" | "ref" | "prevHash" | "hash">): ConsentEntry {
     const prevHash = this.#entries.at(-1)?.hash ?? "genesis";
@@ -48,10 +56,19 @@ export class ConsentLedger {
     return this.#entries.find((x) => x.ref === ref);
   }
 
+  /** Consumer-initiated revocation, effective mid-flight — the consent-side twin of NonceLedger.revoke(). */
+  revoke(ref: string): void {
+    this.#revoked.add(ref);
+  }
+
   isValidFor(ref: string, purpose: string, participantId: string, now = Date.now()): boolean {
     const e = this.find(ref);
     return (
-      !!e && e.purpose === purpose && e.grantedTo === participantId && now <= e.expiresAt
+      !!e &&
+      !this.#revoked.has(ref) &&
+      e.purpose === purpose &&
+      e.grantedTo === participantId &&
+      now <= e.expiresAt
     );
   }
 
@@ -127,6 +144,16 @@ export type IdentityProofingPort = {
 export type SortationPort = {
   /** Consumes plaintext transiently, emits a routing code. Never returns an address. */
   route(address: AddressPlaintext, service: string): Promise<{ sortationCode: string }>;
+};
+
+/**
+ * Failed-delivery notification. §6.2: "platform notifies *consumer* (never
+ * the merchant)". Addressed by subjectRef — a root-identity reference — so
+ * nothing that reaches this port could be repurposed to notify a merchant
+ * participant id by mistake.
+ */
+export type NotificationPort = {
+  notify(subjectRef: string, event: string): void;
 };
 
 /* -------------------------------------------------------------- projections */
