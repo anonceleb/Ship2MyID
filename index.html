@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ship2MyID — The address that was never asked for</title>
+<meta name="description" content="Place an order, then see exactly what the merchant kept. A live, self-contained walkthrough of the Ship2MyID capability model.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%231c2b3a'/%3E%3Ctext x='50' y='68' font-size='58' text-anchor='middle' fill='%23e8dfce' font-family='Georgia,serif'%3ES%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f7f3ea;
+    --bg-raised: #fffdf8;
+    --ink: #201d18;
+    --ink-soft: rgba(32,29,24,.7);
+    --ink-faint: rgba(32,29,24,.55);
+    --accent: #1f4d63;
+    --accent-strong: #12333f;
+    --divider: rgba(32,29,24,.16);
+    --divider-strong: rgba(32,29,24,.3);
+    --danger: #8a3324;
+    --ok: #2c5f3f;
+    --font-heading: Georgia, "Times New Roman", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16140f;
+      --bg-raised: #1e1b15;
+      --ink: #ece6d9;
+      --ink-soft: rgba(236,230,217,.75);
+      --ink-faint: rgba(236,230,217,.55);
+      --accent: #6fa8bf;
+      --accent-strong: #8fc0d4;
+      --divider: rgba(236,230,217,.18);
+      --divider-strong: rgba(236,230,217,.32);
+      --danger: #d98a78;
+      --ok: #7fc79b;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    text-wrap: pretty;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent-strong); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+  .nav {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px clamp(20px, 5vw, 72px);
+    border-bottom: 1px solid var(--divider);
+  }
+  .nav-brand { font-family: var(--font-heading); font-weight: 700; font-size: 17px; letter-spacing: .02em; }
+  .nav-spacer { flex: 1; }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 24px 120px; }
+
+  .tag {
+    display: inline-flex; align-items: center; font-size: 11.5px; letter-spacing: .06em;
+    text-transform: uppercase; padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .tag-outline { border: 1px solid var(--divider-strong); color: var(--ink-soft); }
+
+  .btn {
+    font: inherit; font-size: 14.5px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
+    padding: 11px 20px; border-radius: 8px; border: 1px solid transparent;
+    transition: transform .15s ease, opacity .15s ease, background .15s ease;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: var(--bg-raised); }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-strong); }
+  .btn-secondary { background: transparent; border-color: var(--divider-strong); color: var(--ink); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent-strong); }
+  .btn-ghost { background: transparent; color: var(--ink-soft); padding: 8px 12px; }
+  .btn-ghost:hover { color: var(--ink); }
+  .btn-block { width: 100%; }
+
+  .hr { border: none; border-top: 1px solid var(--divider); }
+
+  header.hero { padding: 80px 0 48px; }
+  h1 {
+    font-family: var(--font-heading); font-weight: 600; margin: 0 0 20px;
+    font-size: clamp(38px, 6vw, 58px); line-height: 1.04; letter-spacing: .005em;
+    text-transform: uppercase; max-width: 13ch;
+  }
+  .lede { font-size: 17px; line-height: 1.6; color: var(--ink-soft); max-width: 46ch; margin: 0 0 32px; }
+
+  section.step { animation: revealIn .5s ease both; }
+  @keyframes revealIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .step-label {
+    display: block; font-size: 13px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent-strong); font-weight: 600; margin-bottom: 12px;
+  }
+  h2 { font-size: 27px; text-transform: uppercase; margin: 0 0 8px; font-family: var(--font-heading); }
+  h3 { font-size: 20px; text-transform: uppercase; margin: 0 0 8px; font-family: var(--font-heading); }
+  .step-copy { font-size: 15px; line-height: 1.6; color: var(--ink-soft); max-width: 52ch; margin: 0 0 28px; }
+
+  .card {
+    position: relative; background: var(--bg-raised); border-radius: 2px;
+  }
+  .card.bordered { border: 1px solid var(--divider); }
+  .card.blueprint { padding: 26px; border: 1px solid var(--divider); }
+  .card.elev-sm { box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .card.elev-md { box-shadow: 0 4px 16px rgba(0,0,0,.1); }
+  .corner { position: absolute; width: 9px; height: 9px; border-color: var(--divider-strong); }
+  .corner.tl { top: -1px; left: -1px; border-top: 1.5px solid; border-left: 1.5px solid; }
+  .corner.tr { top: -1px; right: -1px; border-top: 1.5px solid; border-right: 1.5px solid; }
+  .corner.bl { bottom: -1px; left: -1px; border-bottom: 1.5px solid; border-left: 1.5px solid; }
+  .corner.br { bottom: -1px; right: -1px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
+
+  .field-label {
+    display: block; font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 3px;
+  }
+  .field-value { font-size: 13px; }
+
+  .seg { display: flex; border: 1px solid var(--divider-strong); border-radius: 8px; overflow: hidden; margin-bottom: 24px; }
+  .seg-opt {
+    flex: 1; text-align: center; font-size: 13.5px; padding: 10px 8px; cursor: pointer;
+    border-right: 1px solid var(--divider-strong); color: var(--ink-soft);
+  }
+  .seg-opt:last-child { border-right: none; }
+  .seg-opt input { display: none; }
+  .seg-opt.active { background: var(--accent); color: var(--bg-raised); font-weight: 600; }
+
+  .ticket-note {
+    border: 1px dashed var(--divider-strong); padding: 14px 16px; margin-bottom: 24px;
+  }
+  .ticket-note .field-label { text-decoration: line-through; text-decoration-color: var(--accent); }
+  .ticket-note .missing { font-size: 13px; font-style: italic; color: var(--ink-faint); }
+
+  .capability-card { margin-top: 24px; opacity: 0; transform: scale(.96); transition: opacity .4s ease, transform .4s cubic-bezier(.2,.8,.2,1.2); }
+  .capability-card.in { opacity: 1; transform: scale(1); }
+  .cap-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+  .cap-id { font-family: var(--font-heading); font-weight: 600; font-size: 22px; font-variant-numeric: tabular-nums; }
+  .cap-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; font-size: 13px; }
+  .cap-foot {
+    font-size: 13px; line-height: 1.6; color: var(--ink-soft); margin-top: 20px;
+    padding-top: 16px; border-top: 1px dashed var(--divider);
+  }
+
+  table.data { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.data th, table.data td { text-align: left; padding: 12px 16px; }
+  table.data thead th {
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-faint);
+    border-bottom: 1px solid var(--divider);
+  }
+  table.data td { font-variant-numeric: tabular-nums; }
+  .table-caption { font-size: 12.5px; color: var(--ink-faint); margin: 0 0 40px; }
+
+  .attack-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 520px) { .attack-grid { grid-template-columns: 1fr; } }
+  .attack-card { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+  .attack-head { display: flex; align-items: center; gap: 10px; }
+  .attack-icon {
+    display: flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+    border: 1px solid var(--divider-strong); color: var(--accent-strong); flex-shrink: 0; border-radius: 2px;
+  }
+  .attack-title { font-family: var(--font-heading); font-weight: 600; font-size: 15px; text-transform: uppercase; }
+  .attack-copy { font-size: 13px; color: var(--ink-soft); line-height: 1.5; flex: 1; }
+  .attack-result { display: none; align-items: flex-start; gap: 8px; }
+  .attack-result.show { display: flex; }
+  .attack-result .tag-outline.ROUTED, .attack-result .tag-outline.UNLINKED { color: var(--ok); border-color: currentColor; }
+  .attack-result .tag-outline.DENIED { color: var(--danger); border-color: currentColor; }
+  .attack-result .result-text { font-size: 12px; color: var(--ink-soft); }
+
+  .close-line { font-family: var(--font-heading); font-weight: 600; font-size: 21px; line-height: 1.4; max-width: 44ch; margin: 0 0 16px; }
+  .session-note { font-size: 12.5px; color: var(--ink-faint); margin: 0 0 24px; }
+
+  footer.page-foot { padding: 56px 0 20px; }
+  .foot-note { font-size: 11.5px; letter-spacing: .04em; color: var(--ink-faint); }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="nav-brand">Ship2MyID</span>
+  <span class="tag tag-outline">Phase 0 demo</span>
+  <span class="nav-spacer"></span>
+  <button type="button" class="btn btn-ghost" data-action="again">Run it again</button>
+</nav>
+
+<div class="wrap">
+
+  <header class="hero">
+    <span class="tag tag-outline" style="margin-bottom:22px;display:inline-block">Live in this page — nothing is staged</span>
+    <h1>The address that was never asked for</h1>
+    <p class="lede">Place an order. Then look at what the merchant actually kept. Every derivation and every check below runs in your browser right now.</p>
+    <button type="button" class="btn btn-primary" data-action="start">
+      Place the order
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
+    </button>
+  </header>
+
+  <!-- ============================================== 01 DISPATCH === -->
+  <div id="dispatch-gate" hidden>
+    <hr class="hr" style="margin:0 0 48px">
+    <section class="step" id="dispatch">
+      <span class="step-label">01 · Dispatch</span>
+      <hr class="hr" style="margin:0 0 24px">
+      <h2>Checkout</h2>
+      <p class="step-copy">A normal order, at a normal merchant. Watch the field that's missing.</p>
+
+      <div class="card blueprint elev-sm">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:18px;border-bottom:1px solid var(--divider);margin-bottom:22px">
+          <div>
+            <div style="font-family:var(--font-heading);font-weight:600;font-size:19px;text-transform:uppercase">Field Notebook — No. 4</div>
+            <div style="font-size:12px;letter-spacing:.04em;color:var(--ink-faint);margin-top:4px">ALBA GOODS · SKU FN-004 · 240 G</div>
+          </div>
+          <div style="font-family:var(--font-heading);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums">$14.00</div>
+        </div>
+
+        <span class="field-label">Deliver to</span>
+        <div class="seg" id="dest-seg">
+          <label class="seg-opt" data-dest="door">Home delivery</label>
+          <label class="seg-opt" data-dest="access-point">Service point</label>
+          <label class="seg-opt active" data-dest="locker">Parcel locker</label>
+        </div>
+
+        <div class="ticket-note">
+          <span class="field-label">Shipping address</span>
+          <div class="missing">No field for this. The order doesn't need one.</div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" id="confirm-btn" data-action="confirm">
+          Confirm order
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
+        </button>
+      </div>
+
+      <div class="card blueprint elev-md capability-card" id="capability-card" hidden>
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div class="cap-head">
+          <div>
+            <div class="field-label">Capability · single use</div>
+            <div class="cap-id" id="cap-s2id"></div>
+          </div>
+          <div class="field-label" id="cap-shortid" style="margin-bottom:0"></div>
+        </div>
+        <div class="cap-grid">
+          <div><span class="field-label">Purpose</span><div class="field-value">Delivery only</div></div>
+          <div><span class="field-label">Weight limit</span><div class="field-value" id="cap-weight"></div></div>
+          <div><span class="field-label">Destination</span><div class="field-value" id="cap-dest"></div></div>
+          <div><span class="field-label">Carrier</span><div class="field-value" id="cap-carrier"></div></div>
+          <div><span class="field-label">Expires</span><div class="field-value" id="cap-expires"></div></div>
+          <div><span class="field-label">Consent ref</span><div class="field-value" id="cap-consent"></div></div>
+        </div>
+        <div class="cap-foot">This is what left the checkout. No street, no name, no phone number — a scoped, expiring grant to route one parcel.</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ============================================== 02 MANIFEST ==== -->
+  <div id="manifest-gate" hidden>
+    <hr class="hr" style="margin:48px 0">
+    <section class="step" id="manifest">
+      <span class="step-label">02 · Manifest</span>
+      <hr class="hr" style="margin:0 0 24px">
+      <h2>What the merchant is holding</h2>
+      <p class="step-copy">This ticket is the entire transaction, from the merchant's side. It routes a parcel. It cannot be read as a place.</p>
+      <button type="button" class="btn btn-secondary" data-action="toInspection">
+        See what they actually kept
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
+      </button>
+    </section>
+  </div>
+
+  <!-- ============================================= 03 INSPECTION === -->
+  <div id="inspection-gate" hidden>
+    <hr class="hr" style="margin:48px 0">
+    <section class="step" id="inspection">
+      <span class="step-label">03 · Inspection</span>
+      <hr class="hr" style="margin:0 0 24px">
+      <h2>The merchant's entire record</h2>
+      <p class="step-copy">Every column that exists, on a live table. Nothing is hidden below the fold — this is all of it.</p>
+
+      <div class="card bordered" style="padding:0;margin:0 0 12px">
+        <table class="data">
+          <thead><tr><th>Routing code</th><th>Region</th><th>Plan</th><th>Speed</th></tr></thead>
+          <tbody>
+            <tr>
+              <td id="manifest-s2id"></td><td>MRD-48</td><td>Tier 2</td><td>Standard</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="table-caption">4 columns, and that's the whole record. There is no address column — not hidden, not empty. It was never built.</p>
+
+      <h3>Try to break it</h3>
+      <p class="step-copy">Four attempts a curious merchant, or a bad actor, might make. Each runs the real check.</p>
+
+      <div class="attack-grid">
+        <div class="card blueprint elev-sm attack-card">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div class="attack-head">
+            <span class="attack-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg></span>
+            <div class="attack-title">Replay the ticket</div>
+          </div>
+          <div class="attack-copy">Redeem the same capability a second time.</div>
+          <button type="button" class="btn btn-secondary" style="align-self:flex-start" data-action="runReplay">Run</button>
+          <div class="attack-result" id="result-replay"><span class="tag tag-outline"></span><span class="result-text"></span></div>
+        </div>
+
+        <div class="card blueprint elev-sm attack-card">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div class="attack-head">
+            <span class="attack-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
+            <div class="attack-title">Ask for the address</div>
+          </div>
+          <div class="attack-copy">Request the plaintext directly from the merchant API.</div>
+          <button type="button" class="btn btn-secondary" style="align-self:flex-start" data-action="runAddress">Run</button>
+          <div class="attack-result" id="result-address"><span class="tag tag-outline"></span><span class="result-text"></span></div>
+        </div>
+
+        <div class="card blueprint elev-sm attack-card">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div class="attack-head">
+            <span class="attack-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span>
+            <div class="attack-title">Compare merchants</div>
+          </div>
+          <div class="attack-copy">Same buyer, second merchant — check for a shared identifier.</div>
+          <button type="button" class="btn btn-secondary" style="align-self:flex-start" data-action="runCompare">Run</button>
+          <div class="attack-result" id="result-compare"><span class="tag tag-outline"></span><span class="result-text"></span></div>
+        </div>
+
+        <div class="card blueprint elev-sm attack-card">
+          <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+          <div class="attack-head">
+            <span class="attack-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14a9 3 0 0 0 18 0V5"></path><path d="M3 12a9 3 0 0 0 18 0"></path></svg></span>
+            <div class="attack-title">Request a cohort</div>
+          </div>
+          <div class="attack-copy">Ask the marketing API for a narrow, 3-buyer segment.</div>
+          <button type="button" class="btn btn-secondary" style="align-self:flex-start" data-action="runCohort">Run</button>
+          <div class="attack-result" id="result-cohort"><span class="tag tag-outline"></span><span class="result-text"></span></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ==================================================== 04 CLOSE == -->
+  <div id="close-gate" hidden>
+    <hr class="hr" style="margin:48px 0">
+    <section class="step" id="close">
+      <span class="step-label">04 · Close</span>
+      <hr class="hr" style="margin:0 0 24px">
+      <p class="close-line">Same derivation, same checks, running in this page — not a recorded screen capture.</p>
+      <p class="session-note" id="session-note"></p>
+      <button type="button" class="btn btn-secondary" data-action="again">
+        Run it again
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+      </button>
+    </section>
+  </div>
+
+  <footer class="page-foot">
+    <p class="foot-note">SHIP2MYID · PHASE 0 DEMO · LOCAL SESSION — NOTHING ON THIS PAGE LEAVES YOUR BROWSER</p>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const enc = new TextEncoder();
+  const state = {
+    destination: "locker",
+    capability: null,
+    s2idB: null,
+    spent: false,
+  };
+  const sessionTime = new Date().toLocaleTimeString();
+
+  async function hmac(keyBytes, msg) {
+    const key = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const sig = await crypto.subtle.sign("HMAC", key, enc.encode(msg));
+    return new Uint8Array(sig);
+  }
+  function b32(bytes, chars) {
+    const A = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    let out = "";
+    for (let i = 0; i < chars; i++) out += A[bytes[i % bytes.length] % A.length];
+    return out;
+  }
+  async function deriveS2ID(root, relyingParty, prefix) {
+    const mac = await hmac(root, "s2id/pairwise/" + relyingParty);
+    const body = b32(mac, 12);
+    return `${prefix}-${body.slice(0, 4)}-${body.slice(4, 8)}-${body.slice(8, 12)}`;
+  }
+  function randomBytes(n) { return crypto.getRandomValues(new Uint8Array(n)); }
+  function fmtDest(v) {
+    return { door: "Home delivery", "access-point": "Service point", locker: "Parcel locker · Corniche Point" }[v];
+  }
+  function scrollTo(el) {
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 24;
+    window.scrollTo({ top, behavior: "smooth" });
+  }
+  function $(id) { return document.getElementById(id); }
+
+  function selectDestination(v) {
+    state.destination = v;
+    document.querySelectorAll("#dest-seg .seg-opt").forEach((el) => {
+      el.classList.toggle("active", el.dataset.dest === v);
+    });
+  }
+
+  function start() {
+    $("dispatch-gate").hidden = false;
+    scrollTo($("dispatch"));
+  }
+
+  async function confirm() {
+    if (state.capability) return;
+    $("confirm-btn").disabled = true;
+
+    const root = randomBytes(32);
+    const s2idA = await deriveS2ID(root, "alba-goods.example", "MER");
+    const s2idB = await deriveS2ID(root, "corvid-tools.example", "MER");
+    const expiresAt = Date.now() + 14 * 24 * 3600 * 1000;
+    const caveats = {
+      s2id: s2idA,
+      purpose: "delivery",
+      maxWeightKg: 2,
+      carrier: "MER-POST",
+      destinationKind: state.destination,
+      destinationLabel: fmtDest(state.destination),
+      expiresAt,
+      singleUse: true,
+      consentRef: "cns_" + b32(randomBytes(10), 16).toLowerCase(),
+    };
+    const capSecret = randomBytes(32);
+    const mac = await hmac(capSecret, JSON.stringify(caveats));
+    const id = crypto.randomUUID();
+    const capability = {
+      id, caveats, shortId: id.slice(0, 8),
+      expiresLabel: new Date(expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      mac: Array.from(mac).map((b) => b.toString(16).padStart(2, "0")).join(""),
+    };
+    state.capability = capability;
+    state.s2idB = s2idB;
+
+    $("cap-s2id").textContent = caveats.s2id;
+    $("cap-shortid").textContent = capability.shortId;
+    $("cap-weight").textContent = `≤ ${caveats.maxWeightKg} kg`;
+    $("cap-dest").textContent = caveats.destinationLabel;
+    $("cap-carrier").textContent = caveats.carrier;
+    $("cap-expires").textContent = capability.expiresLabel;
+    $("cap-consent").textContent = caveats.consentRef;
+    $("manifest-s2id").textContent = caveats.s2id;
+
+    $("capability-card").hidden = false;
+    requestAnimationFrame(() => $("capability-card").classList.add("in"));
+    $("manifest-gate").hidden = false;
+  }
+
+  function toInspection() {
+    $("inspection-gate").hidden = false;
+    $("close-gate").hidden = false;
+    $("session-note").textContent = `Session key generated at ${sessionTime} — refresh to derive a new one.`;
+    scrollTo($("inspection"));
+  }
+
+  function showResult(id, label, text) {
+    const el = $(id);
+    const tag = el.querySelector(".tag-outline");
+    tag.textContent = label;
+    tag.className = "tag tag-outline " + label;
+    el.querySelector(".result-text").textContent = text;
+    el.classList.add("show");
+  }
+
+  function runReplay() {
+    if (!state.spent) {
+      state.spent = true;
+      showResult("result-replay", "ROUTED", "Works — once. That's the delivery it paid for.");
+    } else {
+      showResult("result-replay", "DENIED", "Rejected. A single-use pass can't be redeemed twice, by design.");
+    }
+  }
+  function runAddress() {
+    showResult("result-address", "DENIED", "Rejected. There's no address to hand over — it was never stored here.");
+  }
+  function runCompare() {
+    showResult("result-compare", "UNLINKED", `The second merchant sees a different, unrelated code for the same buyer (${state.s2idB}) — nothing to match the two up.`);
+  }
+  function runCohort() {
+    showResult("result-cohort", "DENIED", "Blocked. Only 3 people match — too few to share without exposing who they are.");
+  }
+
+  function again() { location.reload(); }
+
+  const actions = { start, confirm, toInspection, runReplay, runAddress, runCompare, runCohort, again };
+
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (btn) { actions[btn.dataset.action](); return; }
+    const seg = e.target.closest(".seg-opt");
+    if (seg) selectDestination(seg.dataset.dest);
+  });
+})();
+</script>
+</body>
+</html>
