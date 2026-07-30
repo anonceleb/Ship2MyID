@@ -16,6 +16,7 @@ import {
 } from "../../../packages/crypto/src/envelope.ts";
 import {
   verify as verifyCap,
+  CapabilityBurned,
   NonceLedger,
   type Capability,
 } from "../../../packages/capability/src/capability.ts";
@@ -30,7 +31,6 @@ import { OperatorKeyring, type OperatorPublicKey } from "../../../packages/label
 import { mintLabel, type SignedLabel } from "../../../packages/labels/src/label.ts";
 
 export class AuditPrecondition extends Error {}
-export class ConsentMissing extends Error {}
 export class PurposeMismatch extends Error {}
 
 export type AddressRecord = {
@@ -117,13 +117,23 @@ export class Vault {
    * call, before plaintext exists. A decryption that cannot be attributed to an
    * actor, a purpose, and a consent reference is not a policy violation — it is
    * a crash.
+   *
+   * Rejection shape: a replayed capability (nonce already burned) and a
+   * revoked one (consent record revoked, INV-16) both throw the exact same
+   * CapabilityBurned(cap.id) — not two different error classes with two
+   * different messages. Collapsing these was a fix, not the original design:
+   * a merchant catching by type could otherwise distinguish "already used"
+   * from "consumer pulled it mid-flight," which defeats the point of
+   * Platform.revoke() looking identical to a replay from the outside. See
+   * tests/invariants/exceptions-error-shape.test.ts.
    */
   async resolve(cap: Capability, actor: string): Promise<{ sortationCode: string }> {
     verifyCap(this.#capSecret, cap);
-    this.#nonces.burn(cap.id); // replay dies here
+    this.#nonces.burn(cap.id); // replay dies here — CapabilityBurned
 
     if (!this.#consent.isValidFor(cap.caveats.consentRef, cap.caveats.purpose, actor)) {
-      throw new ConsentMissing(cap.caveats.consentRef);
+      // Same class, same shape as the replay rejection above — see docstring.
+      throw new CapabilityBurned(cap.id);
     }
 
     const recordId = this.#bindings.get(cap.caveats.s2id);

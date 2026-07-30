@@ -151,8 +151,12 @@ export class Platform {
    * mid-flight." Burns the nonce (parity with a shared deployment) and
    * revokes the consent record the capability was minted against — the
    * latter is what actually makes Vault.resolve() reject here, via the
-   * same isValidFor() check every resolution already runs, so a merchant
-   * sees the same shape of failure as a replay, not a distinguishable one.
+   * same isValidFor() check every resolution already runs. That check's
+   * failure and a burned-nonce failure are collapsed onto the same
+   * CapabilityBurned class in Vault.resolve() specifically so a merchant
+   * cannot catch by error type and tell "already used" apart from
+   * "consumer revoked it" — see the docstring on resolve() and
+   * tests/invariants/exceptions-error-shape.test.ts.
    */
   revoke(capabilityId: string, subjectRef: string): void {
     const consentRef = this.#capabilityConsent.get(capabilityId);
