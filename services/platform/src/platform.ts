@@ -19,6 +19,7 @@ import { Registry, newKeyPair, type SignedEnvelope } from "../../../packages/reg
 import { deriveS2ID, type RootSecret } from "../../../packages/identity/src/pairwise.ts";
 import { PolicyStore, signPolicy } from "../../../packages/policy/src/policy.ts";
 import { AsyncExchange } from "../../../packages/network/src/exchange.ts";
+import { UsageMeter } from "../../../packages/metering/src/meter.ts";
 
 export class TierTooLow extends Error {}
 export class UnknownCapability extends Error {}
@@ -47,6 +48,16 @@ function defaultPolicyStore(): PolicyStore {
   return new PolicyStore(publicKey, initial);
 }
 
+/**
+ * [Phase 3] Generous enough that no existing caller notices it — 1000
+ * createShipment calls per participant per minute — but real, so a Platform
+ * that receives no explicit `meter` still enforces a quota rather than
+ * silently having none.
+ */
+function defaultUsageMeter(): UsageMeter {
+  return new UsageMeter({ limit: 1000, windowMs: 60_000 });
+}
+
 export class Platform {
   #registry: Registry;
   #consent: ConsentLedger;
@@ -71,6 +82,8 @@ export class Platform {
   /** [A10] The create-shipment action/on_action pair. See packages/network/src/exchange.ts. */
   #shipments = new AsyncExchange<ShipmentReady>();
   #pendingShipments = new Map<string, { env: SignedEnvelope; req: ShipmentRequest; subjectRef: string }>();
+  /** [Phase 3] Metered API. See packages/metering/src/meter.ts. */
+  #meter: UsageMeter;
 
   constructor(opts: {
     registry: Registry;
@@ -78,12 +91,14 @@ export class Platform {
     capSecret: Buffer;
     nonces?: NonceLedger;
     policy?: PolicyStore;
+    meter?: UsageMeter;
   }) {
     this.#registry = opts.registry;
     this.#consent = opts.consent;
     this.#capSecret = opts.capSecret;
     this.#nonces = opts.nonces ?? new NonceLedger();
     this.#policy = opts.policy ?? defaultPolicyStore();
+    this.#meter = opts.meter ?? defaultUsageMeter();
   }
 
   /** [A9] The signed policy artifact currently gating createShipment. */
@@ -109,6 +124,10 @@ export class Platform {
    * signed artifact, and that policy's hash rides along on the consent
    * entry so this exact decision stays replayable against the rules that
    * were actually in force, even after the policy is hot-reloaded.
+   *
+   * [Phase 3] Metered: counted against the merchant's quota right after
+   * signature verification — a participant over quota is rejected before
+   * tier-gating or minting run at all, not billed for work already done.
    */
   createShipment(
     env: SignedEnvelope,
@@ -116,6 +135,7 @@ export class Platform {
     subjectRef: string,
   ): { capability: Capability; merchantView: MerchantView } {
     const merchant = this.#registry.verify(env, req);
+    this.#meter.consume(merchant.participantId);
     const proj = this.#projections.get(req.s2id);
     if (!proj) throw new Error("unknown s2id");
     const activePolicy = this.#policy.active();

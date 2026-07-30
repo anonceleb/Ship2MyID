@@ -7,7 +7,7 @@ tokens, and the executable privacy invariants.
 Node ≥ 22.6 only — TypeScript executes via native type stripping.
 
 ```bash
-npm run verify   # privacy-lint + all invariants (INV-1..18, A4, non-widening)
+npm run verify   # privacy-lint + all invariants (INV-1..22, A4, non-widening)
 npm run demo     # narrated end-to-end ship flow
 ```
 
@@ -28,6 +28,10 @@ packages/
   registry/    Ed25519 request signing + participant registry (ONDC/Beckn shape)
   capability/  scoped, expiring, single-use, attenuable grants
   labels/      [A4] COSE_Sign1 offline-verifiable shipping labels + rotating operator keys
+  policy/      [A9] signed, versioned, hot-reloadable disclosure policy
+  network/     [A10] Beckn-shaped async request/callback pairs (action/on_action)
+  metering/    [Phase 3] per-participant metered API quota
+  sdk/         [Phase 3] the published merchant-facing surface — MerchantClient, CheckoutResult
   core/        domain, consent ledger, ports — imports NOTHING from adapters or services
 services/
   vault/       ZONE 1 — the only decryption path. Audit is a precondition of plaintext
@@ -121,3 +125,14 @@ Phase 1 remaining: Rust vault, Postgres + RLS, SD-JWT VC issuance, consumer
 "what we hold" view. COSE offline labels ([A4]), signed disclosure policies
 ([A9]), async request/callback capability minting ([A10]), and Phase 2
 (Exceptions — returns, failed delivery, revocation, redirect, refund) are done.
+
+Phase 3 (Commerce): the merchant SDK (`packages/sdk` — `MerchantClient`,
+`CheckoutResult`), the verified-human signal (`isVerifiedHuman`), and the
+metered API (`packages/metering`) are done — INV-21/22. Tier-gating was
+already A9. **Not done:** the actual `<S2IDCheckout/>` embeddable UI
+widget — this repo has no bundler or frontend framework yet, and faking
+one in a static demo page would be worse than stating the gap. What "done"
+means here (per SHIP2MYID_DEMO_SPEC.md §12: "a third party integrates from
+the published SDK without talking to us") is met at the SDK layer; the
+drop-in widget is a thin client over the same `MerchantClient` and is
+next.
