@@ -137,7 +137,7 @@ a:hover{color:var(--color-accent-900)}
 
     <div class="card" style="padding:0;margin:0 0 12px;border:1px solid var(--color-divider)">
       <table class="table" style="margin:0">
-        <thead><tr><th>s2id</th><th>Geo bucket</th><th>Tier</th><th>Service</th></tr></thead>
+        <thead><tr><th>Routing code</th><th>Region</th><th>Plan</th><th>Speed</th></tr></thead>
         <tbody>
           <sc-if value="{{ hasCapability }}" hint-placeholder-val="{{ false }}">
             <tr><td style="font-feature-settings:'tnum' 1">{{ capability.caveats.s2id }}</td><td>MRD-48</td><td>Tier 2</td><td>Standard</td></tr>
@@ -145,7 +145,7 @@ a:hover{color:var(--color-accent-900)}
         </tbody>
       </table>
     </div>
-    <p style="font-size:12.5px;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin:0 0 40px">4 columns. No address column exists to add data to.</p>
+    <p style="font-size:12.5px;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin:0 0 40px">4 columns, and that's the whole record. There is no address column — not hidden, not empty. It was never built.</p>
 
     <h3 style="font-size:20px;text-transform:uppercase;margin:0 0 8px">Try to break it</h3>
     <p style="font-size:15px;line-height:1.6;color:color-mix(in srgb, var(--color-text) 78%, transparent);max-width:52ch;margin:0 0 24px">Four attempts a curious merchant, or a bad actor, might make. Each runs the real check.</p>
@@ -294,13 +294,6 @@ class Component extends DCLogic {
     return `${prefix}-${body.slice(0, 4)}-${body.slice(4, 8)}-${body.slice(8, 12)}`;
   }
   randomBytes(n) { return crypto.getRandomValues(new Uint8Array(n)); }
-  linkability(a, b) {
-    if (a === b) return 1;
-    const sa = a.replace(/-/g, "").slice(3), sb = b.replace(/-/g, "").slice(3);
-    let shared = 0;
-    for (let i = 0; i < Math.min(sa.length, sb.length); i++) { if (sa[i] === sb[i]) shared++; else break; }
-    return shared >= 4 ? shared / sa.length : 0;
-  }
   fmtDest(v) {
     return { door: "Home delivery", "access-point": "Service point", locker: "Parcel locker · Corniche Point" }[v];
   }
@@ -346,20 +339,19 @@ class Component extends DCLogic {
 
   runReplay = () => {
     if (!this.state.spent) {
-      this.setState({ spent: true, results: { ...this.state.results, replay: { label: "ROUTED", text: "First redemption: routed to sortation MRD-9F2C1A." } } });
+      this.setState({ spent: true, results: { ...this.state.results, replay: { label: "ROUTED", text: "Works — once. That's the delivery it paid for." } } });
     } else {
-      this.setState({ results: { ...this.state.results, replay: { label: "DENIED", text: "Capability already burned — nonce ledger rejects reuse." } } });
+      this.setState({ results: { ...this.state.results, replay: { label: "DENIED", text: "Rejected. A single-use pass can't be redeemed twice, by design." } } });
     }
   };
   runAddress = () => {
-    this.setState({ results: { ...this.state.results, address: { label: "DENIED", text: "No code path returns plaintext to a merchant — 404, endpoint does not exist." } } });
+    this.setState({ results: { ...this.state.results, address: { label: "DENIED", text: "Rejected. There's no address to hand over — it was never stored here." } } });
   };
   runCompare = () => {
-    const score = this.linkability(this.state.capability.caveats.s2id, this.state.s2idB);
-    this.setState({ results: { ...this.state.results, compare: { label: "UNLINKED", text: `Merchant B holds ${this.state.s2idB} — linkability score ${score}. Same person, no shared key.` } } });
+    this.setState({ results: { ...this.state.results, compare: { label: "UNLINKED", text: `The second merchant sees a different, unrelated code for the same buyer (${this.state.s2idB}) — nothing to match the two up.` } } });
   };
   runCohort = () => {
-    this.setState({ results: { ...this.state.results, cohort: { label: "DENIED", text: "Cohort size 3 < k-anonymity floor of 25 — not disclosed." } } });
+    this.setState({ results: { ...this.state.results, cohort: { label: "DENIED", text: "Blocked. Only 3 people match — too few to share without exposing who they are." } } });
   };
 
   again = () => location.reload();
