@@ -4,96 +4,102 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ship2MyID — operator console</title>
+<link rel="icon" href="./assets/logo-small.png">
 <style>
   :root{
-    --paper:#E7E3D8; --paper-deep:#DCD7C8; --card:#F1EEE5; --ink:#1C2A3A; --ink-soft:#5B6472;
-    --stamp:#A63D2F; --route:#3D6B52; --amber:#B98430; --line:#C7C0AC; --radius:3px;
+    --bg:#ffffff; --bg-raised:#F6F4EF; --ink:#161616; --ink-soft:rgba(22,22,22,.66);
+    --ink-faint:rgba(22,22,22,.46); --red:#D0021B; --red-dark:#A5010F;
+    --divider:rgba(22,22,22,.14); --divider-strong:rgba(22,22,22,.28); --ok:#1F6F43; --radius:0px;
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
-  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif; -webkit-font-smoothing:antialiased;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing:antialiased;}
   .wrap{max-width:760px; margin:0 auto; padding:0 24px 140px;}
 
-  .topnav{max-width:760px; margin:0 auto; padding:28px 24px 0; display:flex; justify-content:space-between; align-items:center;}
-  .topnav a{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft); text-decoration:none;}
+  .topbar{display:flex; align-items:center; padding:22px clamp(20px,5vw,72px); border-bottom:1px solid var(--divider);}
+  .topbar img{height:32px; width:auto; display:block;}
+
+  .topnav{max-width:760px; margin:0 auto; padding:20px 24px 0; display:flex; justify-content:space-between; align-items:center;}
+  .topnav a{font-size:12px; letter-spacing:.04em; text-transform:uppercase; font-weight:600; color:var(--ink-soft); text-decoration:none;}
   .topnav a:hover{color:var(--ink);}
 
-  header.hero{padding:56px 0 64px;}
-  .eyebrow{font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); display:flex; align-items:center; gap:10px; margin-bottom:22px;}
-  .eyebrow .dot{width:6px; height:6px; border-radius:50%; background:var(--route);}
-  h1.headline{font-family:'Fraunces', serif; font-weight:500; font-size:clamp(30px,5.4vw,46px); line-height:1.08; letter-spacing:-.01em; margin:0 0 20px; max-width:14ch;}
+  header.hero{padding:56px 0 44px;}
+  .eyebrow{font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--red); display:inline-flex; align-items:center; gap:8px; margin-bottom:20px; border:1px solid var(--red); padding:6px 12px;}
+  .eyebrow .dot{display:none;}
+  h1.headline{font-weight:700; font-size:clamp(28px,5vw,40px); line-height:1.2; letter-spacing:0; margin:0 0 14px; max-width:16ch;}
   p.lede{font-size:16px; line-height:1.6; color:var(--ink-soft); max-width:48ch; margin:0 0 32px;}
-  .btn{font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:.03em; background:var(--ink); color:var(--paper); border:none; padding:14px 22px; border-radius:var(--radius); cursor:pointer; display:inline-flex; align-items:center; gap:10px; transition:transform .15s ease, background .15s ease;}
-  .btn:hover{background:#0f1926; transform:translateY(-1px);}
-  .btn[disabled]{opacity:.35; cursor:default; pointer-events:none;}
-  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line);}
-  .btn.ghost:hover{background:var(--card);}
+  .btn{font-size:15px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; background:var(--red); color:#fff; border:none; padding:15px 26px; border-radius:var(--radius); cursor:pointer; display:inline-flex; align-items:center; gap:10px; transition:background .15s ease;}
+  .btn:hover{background:var(--red-dark);}
+  .btn[disabled]{opacity:.4; cursor:default; pointer-events:none;}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--ink); padding:13px 22px; font-size:14.5px;}
+  .btn.ghost:hover{background:var(--bg-raised);}
   .btn .arrow{transition:transform .15s ease;} .btn:hover .arrow{transform:translateX(3px);}
 
-  section.beat{border-top:1px solid var(--line); padding:56px 0 8px; opacity:0; filter:saturate(.5); transition:opacity .5s ease, filter .5s ease;}
+  section.beat{border-top:1px solid var(--divider); padding:48px 0 8px; opacity:0; transition:opacity .5s ease;}
   section.beat[hidden]{display:none;}
-  section.beat.active{opacity:1; filter:none;}
-  h2.beat-title{font-family:'Fraunces', serif; font-weight:500; font-size:26px; margin:0 0 8px;}
-  p.beat-sub{color:var(--ink-soft); font-size:15px; line-height:1.6; margin:0 0 32px; max-width:52ch;}
+  section.beat.active{opacity:1;}
+  section.beat .eyebrow{display:block; font-size:13px; letter-spacing:.09em; text-transform:uppercase; color:var(--red); font-weight:700; margin-bottom:14px; border:none; padding:0;}
+  h2.beat-title{font-weight:800; text-transform:uppercase; font-size:26px; margin:0 0 8px;}
+  p.beat-sub{color:var(--ink-soft); font-size:15px; line-height:1.6; margin:0 0 30px; max-width:52ch;}
 
   /* ------------------------------------------------------------ manifest intake -- */
-  .manifest-card{background:var(--card); border:1px solid var(--line); border-radius:6px; padding:26px; margin-bottom:24px;}
-  .m-row{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+  .manifest-card{background:var(--bg-raised); border:1px solid var(--divider); border-radius:var(--radius); padding:26px; margin-bottom:24px;}
+  .m-row{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--divider); font-size:13.5px;}
   .m-row:last-child{border-bottom:none;}
-  .m-row .k{color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em;}
-  .m-row .v{font-family:'IBM Plex Mono', monospace;}
+  .m-row .k{color:var(--ink-faint); font-size:11px; text-transform:uppercase; letter-spacing:.06em;}
+  .m-row .v{}
 
   /* ---------------------------------------------------------------------- label -- */
   .label-stage{display:none; gap:28px; margin-bottom:8px;}
   .label-stage.show{display:grid; grid-template-columns:auto 1fr;}
   @media(max-width:560px){.label-stage.show{grid-template-columns:1fr;}}
-  .qr-frame{background:#fff; border:1px solid var(--ink); border-radius:4px; padding:14px; width:172px; height:172px; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;}
+  .qr-frame{background:#fff; border:1px solid var(--ink); border-radius:0; padding:14px; width:172px; height:172px; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;}
   .qr-frame svg{width:100%; height:100%; display:block;}
   .token-details{margin-top:16px;}
-  .token-details summary{font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-soft); cursor:pointer; user-select:none;}
+  .token-details summary{font-size:11px; color:var(--ink-faint); cursor:pointer; user-select:none;}
   .token-details summary:hover{color:var(--ink);}
   .token-stamp{
-    font-family:'IBM Plex Mono', monospace; font-size:10px; line-height:1.4; color:var(--ink);
-    margin-top:10px; padding:10px; border:1px dashed var(--line); border-radius:var(--radius);
+    font-size:10.5px; line-height:1.4; color:var(--ink);
+    margin-top:10px; padding:10px; border:1px dashed var(--divider-strong); border-radius:var(--radius);
     max-width:100%; overflow-wrap:anywhere; max-height:120px; overflow-y:auto;
   }
-  .label-meta{font-family:'IBM Plex Mono', monospace; font-size:12.5px;}
+  .label-meta{font-size:12.5px;}
   .label-meta .row{margin-bottom:10px;}
-  .label-meta .k{color:var(--ink-soft); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:2px;}
-  .sig-line{word-break:break-all; font-size:10.5px; color:var(--ink-soft); line-height:1.5; margin-top:14px; padding-top:12px; border-top:1px dashed var(--line);}
+  .label-meta .k{color:var(--ink-faint); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:2px;}
+  .sig-line{word-break:break-all; font-size:10.5px; color:var(--ink-soft); line-height:1.5; margin-top:14px; padding-top:12px; border-top:1px dashed var(--divider);}
 
   /* ----------------------------------------------------------------------- scan -- */
-  .scan-console{background:var(--card); border:1px solid var(--line); border-radius:6px; padding:24px; margin-bottom:20px;}
-  .scan-readout{font-family:'IBM Plex Mono', monospace; font-size:12.5px; min-height:20px; margin-top:16px; display:flex; align-items:center; gap:10px; opacity:0; transform:translateY(-4px); transition:opacity .25s ease, transform .25s ease;}
+  .scan-console{background:var(--bg-raised); border:1px solid var(--divider); border-radius:var(--radius); padding:24px; margin-bottom:20px;}
+  .scan-readout{font-size:12.5px; min-height:20px; margin-top:16px; display:flex; align-items:flex-start; gap:8px; opacity:0; transform:translateY(-4px); transition:opacity .25s ease, transform .25s ease;}
   .scan-readout.show{opacity:1; transform:translateY(0);}
-  .stamp-mark{font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:11px; letter-spacing:.08em; border:2px solid currentColor; border-radius:3px; padding:2px 7px; transform:rotate(-6deg); display:inline-block; flex-shrink:0;}
-  .stamp-mark.pass{color:var(--route);} .stamp-mark.deny{color:var(--stamp);}
+  .stamp-mark{font-weight:700; font-size:11px; letter-spacing:.06em; text-transform:uppercase; border:1px solid currentColor; border-radius:0; padding:4px 8px; display:inline-block; flex-shrink:0; white-space:nowrap;}
+  .stamp-mark.pass{color:var(--ok);} .stamp-mark.deny{color:var(--red);}
   .scan-note{font-size:12.5px; color:var(--ink-soft); margin-top:14px;}
 
   /* --------------------------------------------------------------- tracking page -- */
-  .tracking-mock{background:#fff; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-bottom:8px;}
-  .tm-head{background:var(--ink); color:var(--paper); padding:16px 22px; font-family:'Fraunces', serif; font-size:17px; display:flex; justify-content:space-between; align-items:center;}
-  .tm-head .store{font-size:13px; font-family:'IBM Plex Sans', sans-serif; opacity:.7;}
+  .tracking-mock{background:#fff; border:1px solid var(--divider); border-radius:var(--radius); overflow:hidden; margin-bottom:8px;}
+  .tm-head{background:var(--ink); color:#fff; padding:16px 22px; font-size:17px; font-weight:700; display:flex; justify-content:space-between; align-items:center;}
+  .tm-head .store{font-size:12px; letter-spacing:.04em; opacity:.7;}
   .tm-body{padding:24px 22px;}
   .tm-status{display:flex; align-items:center; gap:10px; margin-bottom:20px;}
-  .tm-status .led{width:9px; height:9px; border-radius:50%; background:var(--route);}
-  .tm-status .txt{font-family:'IBM Plex Mono', monospace; font-size:13px;}
+  .tm-status .led{width:9px; height:9px; border-radius:50%; background:var(--ok);}
+  .tm-status .txt{font-size:13px;}
   .tm-steps{display:flex; gap:6px; margin-bottom:24px;}
-  .tm-steps div{flex:1; height:4px; background:var(--route); border-radius:2px;}
-  .tm-steps div.pending{background:var(--line);}
+  .tm-steps div{flex:1; height:4px; background:var(--red); border-radius:0;}
+  .tm-steps div.pending{background:var(--divider-strong);}
 
   .badge{
-    display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:20px;
-    padding:7px 13px 7px 9px; cursor:pointer; position:relative; background:var(--card);
+    display:inline-flex; align-items:center; gap:8px; border:1px solid var(--divider-strong); border-radius:20px;
+    padding:7px 13px 7px 9px; cursor:pointer; position:relative; background:var(--bg-raised);
   }
-  .badge .mark{width:16px; height:16px; border-radius:50%; background:var(--ink); display:flex; align-items:center; justify-content:center;}
-  .badge .mark svg{width:9px; height:9px;}
-  .badge .txt{font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.02em; color:var(--ink-soft);}
+  .badge .mark{width:18px; height:18px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .badge .mark img{width:100%; height:100%; object-fit:cover; display:block;}
+  .badge .txt{font-size:11px; letter-spacing:.02em; color:var(--ink-soft);}
   .badge:hover{border-color:var(--ink);}
   .badge-pop{
     display:none; position:absolute; bottom:calc(100% + 10px); left:0; width:270px;
-    background:var(--ink); color:var(--paper); border-radius:6px; padding:14px 16px;
-    font-family:'IBM Plex Sans', sans-serif; font-size:12.5px; line-height:1.55; z-index:5;
+    background:var(--ink); color:#fff; border-radius:0; padding:14px 16px;
+    font-size:12.5px; line-height:1.55; z-index:5;
   }
   .badge-pop::after{content:""; position:absolute; top:100%; left:18px; border:6px solid transparent; border-top-color:var(--ink);}
   .badge:hover .badge-pop{display:block;}
@@ -101,12 +107,12 @@
   /* --------------------------------------------------------------------- stats -- */
   .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:28px 0 8px;}
   @media(max-width:560px){.stats{grid-template-columns:1fr;}}
-  .stat{background:var(--card); border:1px solid var(--line); border-radius:6px; padding:18px;}
-  .stat .num{font-family:'Fraunces', serif; font-size:26px;}
-  .stat .lbl{font-family:'IBM Plex Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-top:4px;}
+  .stat{background:var(--bg-raised); border:1px solid var(--divider); border-radius:var(--radius); padding:18px;}
+  .stat .num{font-weight:800; font-size:26px; font-variant-numeric:tabular-nums;}
+  .stat .lbl{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin-top:4px;}
 
-  .close-line{font-family:'Fraunces', serif; font-size:19px; line-height:1.5; max-width:44ch; margin:0 0 14px;}
-  .fine{font-size:12.5px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace;}
+  .close-line{font-weight:800; font-size:19px; line-height:1.5; max-width:44ch; margin:0 0 14px;}
+  .fine{font-size:11.5px; letter-spacing:.04em; color:var(--ink-faint);}
   footer{padding:60px 0 20px;}
 
   @media(prefers-reduced-motion: reduce){*{transition:none !important; animation:none !important;}}
@@ -114,6 +120,7 @@
 </head>
 <body>
 
+<div class="topbar"><img src="./assets/logo-large.png" alt="Ship2MyID"></div>
 <div class="topnav">
   <a href="./index.html">← Choose a different flow</a>
   <a href="./consumer-flow.html">See the consumer flow →</a>
@@ -121,7 +128,7 @@
 
 <div class="wrap">
   <header class="hero">
-    <div class="eyebrow"><span class="dot"></span>OPERATOR CONSOLE — REPUBLIC OF MERIDIA POST</div>
+    <div class="eyebrow">Operator console — Republic of Meridia Post</div>
     <h1 class="headline">The label that routes a parcel without ever printing where it's going.</h1>
     <p class="lede">A ticket arrives from the merchant side. Turn it into a real, signed label — then verify it the way a handheld scanner would, offline, at the sorting bench.</p>
     <button class="btn" id="btn-start">Open the next manifest <span class="arrow">→</span></button>
@@ -129,7 +136,7 @@
 
   <!-- =============================================== INTAKE ===== -->
   <section class="beat" id="beat-intake" hidden>
-    <div class="eyebrow">INTAKE</div>
+    <div class="eyebrow">01 · Intake</div>
     <h2 class="beat-title">Manifest queue</h2>
     <p class="beat-sub">One capability, handed off from checkout. This is everything the operator receives — no name, no street.</p>
     <div class="manifest-card" id="manifest-card"></div>
@@ -138,7 +145,7 @@
 
   <!-- ============================================== LABEL ===== -->
   <section class="beat" id="beat-label" hidden>
-    <div class="eyebrow">LABEL</div>
+    <div class="eyebrow">02 · Label</div>
     <h2 class="beat-title">Printed / scannable form</h2>
     <p class="beat-sub">A real QR, generated in your browser from a genuinely Ed25519-signed, compact token — not an image of one. The QR encoder is inlined in this page, not fetched from anywhere, so this still never leaves your browser.</p>
     <div class="label-stage" id="label-stage"></div>
@@ -147,7 +154,7 @@
 
   <!-- =============================================== SCAN ===== -->
   <section class="beat" id="beat-scan" hidden>
-    <div class="eyebrow">SCAN</div>
+    <div class="eyebrow">03 · Scan</div>
     <h2 class="beat-title">Offline verification</h2>
     <p class="beat-sub">A handheld scanner has no network at 5am in a sorting hall. Verification runs against a cached operator key — nothing is looked up.</p>
     <div class="scan-console">
@@ -162,7 +169,7 @@
 
   <!-- ============================================ TRACKING ===== -->
   <section class="beat" id="beat-tracking" hidden>
-    <div class="eyebrow">MERCHANT SURFACE</div>
+    <div class="eyebrow">04 · Merchant surface</div>
     <h2 class="beat-title">What the buyer sees</h2>
     <p class="beat-sub">This page belongs to Alba Goods, not to us. The mark in the corner is the one thing we asked for in return for none of this being their problem to build.</p>
 
@@ -172,7 +179,7 @@
         <div class="tm-status"><span class="led"></span><span class="txt">Out for delivery · Locker · Corniche Point</span></div>
         <div class="tm-steps"><div></div><div></div><div></div><div class="pending"></div></div>
         <div class="badge" id="badge">
-          <span class="mark"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6" stroke="#E7E3D8" stroke-width="1.6" fill="none"/></svg></span>
+          <span class="mark"><img src="./assets/logo-small.png" alt=""></span>
           <span class="txt">Powered by Ship2MyID</span>
           <div class="badge-pop">This delivery was routed without your address ever reaching Alba Goods. Verified by Republic of Meridia Post — tap to see how.</div>
         </div>
@@ -183,7 +190,7 @@
 
   <!-- =============================================== CLOSE ===== -->
   <section class="beat" id="beat-close" hidden>
-    <div class="eyebrow">CLOSE</div>
+    <div class="eyebrow">05 · Close</div>
     <div class="stats">
       <div class="stat"><div class="num" id="stat-labels">1</div><div class="lbl">Labels issued, this session</div></div>
       <div class="stat"><div class="num">0</div><div class="lbl">Addresses printed</div></div>

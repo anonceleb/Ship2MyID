@@ -4,190 +4,187 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ship2MyID — the address that was never asked for</title>
+<link rel="icon" href="./assets/logo-small.png">
 <style>
   :root{
-    --paper:#E7E3D8;
-    --paper-deep:#DCD7C8;
-    --card:#F1EEE5;
-    --ink:#1C2A3A;
-    --ink-soft:#5B6472;
-    --stamp:#A63D2F;
-    --route:#3D6B52;
-    --amber:#B98430;
-    --line:#C7C0AC;
-    --radius:3px;
+    --bg:#ffffff;
+    --bg-raised:#F6F4EF;
+    --ink:#161616;
+    --ink-soft:rgba(22,22,22,.66);
+    --ink-faint:rgba(22,22,22,.46);
+    --red:#D0021B;
+    --red-dark:#A5010F;
+    --divider:rgba(22,22,22,.14);
+    --divider-strong:rgba(22,22,22,.28);
+    --ok:#1F6F43;
+    --radius:0px;
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   body{
     margin:0;
-    background:var(--paper);
+    background:var(--bg);
     color:var(--ink);
-    font-family:'IBM Plex Sans', sans-serif;
+    font-family:'Helvetica Neue', Arial, sans-serif;
     -webkit-font-smoothing:antialiased;
   }
-  ::selection{background:var(--stamp); color:var(--paper);}
+  ::selection{background:var(--red); color:#fff;}
 
-  .topnav{max-width:760px; margin:0 auto; padding:28px 24px 0; display:flex; justify-content:space-between; align-items:center;}
-  .topnav a{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft); text-decoration:none;}
+  .topbar{display:flex; align-items:center; padding:22px clamp(20px,5vw,72px); border-bottom:1px solid var(--divider);}
+  .topbar img{height:32px; width:auto; display:block;}
+
+  .topnav{max-width:760px; margin:0 auto; padding:20px 24px 0; display:flex; justify-content:space-between; align-items:center;}
+  .topnav a{font-size:12px; letter-spacing:.04em; text-transform:uppercase; font-weight:600; color:var(--ink-soft); text-decoration:none;}
   .topnav a:hover{color:var(--ink);}
 
   .wrap{max-width:760px; margin:0 auto; padding:0 24px 140px;}
 
-  /* ---------------------------------------------------------- texture -- */
-  .grain{
-    position:fixed; inset:0; pointer-events:none; opacity:.035; z-index:1;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  }
-
   /* ------------------------------------------------------------- hero -- */
-  header.hero{padding:96px 0 72px; text-align:left;}
+  header.hero{padding:56px 0 44px; text-align:left;}
   .eyebrow{
-    font-family:'IBM Plex Mono', monospace;
-    font-size:12px; letter-spacing:.14em; text-transform:uppercase;
-    color:var(--ink-soft); display:flex; align-items:center; gap:10px; margin-bottom:22px;
+    font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700;
+    color:var(--red); display:inline-flex; align-items:center; gap:8px; margin-bottom:20px;
+    border:1px solid var(--red); padding:6px 12px;
   }
-  .eyebrow .dot{width:6px; height:6px; border-radius:50%; background:var(--stamp);}
+  .eyebrow .dot{display:none;}
   h1.headline{
-    font-family:'Fraunces', serif;
-    font-weight:500;
-    font-size:clamp(34px, 6vw, 54px);
-    line-height:1.06;
-    letter-spacing:-.01em;
-    margin:0 0 22px;
-    max-width:11.5ch;
+    font-weight:700;
+    font-size:clamp(30px, 5.5vw, 44px);
+    line-height:1.15;
+    letter-spacing:0;
+    margin:0 0 14px;
+    max-width:15ch;
   }
   p.lede{
-    font-size:17px; line-height:1.6; color:var(--ink-soft);
-    max-width:46ch; margin:0 0 36px;
+    font-size:16px; line-height:1.6; color:var(--ink-soft);
+    max-width:48ch; margin:0 0 32px;
   }
   .btn{
-    font-family:'IBM Plex Mono', monospace;
-    font-size:13px; letter-spacing:.03em;
-    background:var(--ink); color:var(--paper);
-    border:none; padding:14px 22px; border-radius:var(--radius);
+    font-size:15px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    background:var(--red); color:#fff;
+    border:none; padding:15px 26px; border-radius:var(--radius);
     cursor:pointer; display:inline-flex; align-items:center; gap:10px;
-    transition:transform .15s ease, background .15s ease;
+    transition:background .15s ease;
   }
-  .btn:hover{background:#0f1926; transform:translateY(-1px);}
+  .btn:hover{background:var(--red-dark);}
   .btn:active{transform:translateY(0);}
-  .btn[disabled]{opacity:.35; cursor:default; pointer-events:none;}
-  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line);}
-  .btn.ghost:hover{background:var(--card); }
+  .btn[disabled]{opacity:.4; cursor:default; pointer-events:none;}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--ink); padding:13px 22px; font-size:14.5px;}
+  .btn.ghost:hover{background:var(--bg-raised); }
   .btn .arrow{transition:transform .15s ease;}
   .btn:hover .arrow{transform:translateX(3px);}
 
   /* ------------------------------------------------------------ beats -- */
   section.beat{
-    border-top:1px solid var(--line);
-    padding:56px 0 8px;
-    opacity:0; filter:saturate(.5);
-    transition:opacity .5s ease, filter .5s ease;
+    border-top:1px solid var(--divider);
+    padding:48px 0 8px;
+    opacity:0;
+    transition:opacity .5s ease;
   }
   section.beat[hidden]{display:none;}
-  section.beat.active{opacity:1; filter:none;}
-  section.beat .eyebrow{margin-bottom:14px;}
+  section.beat.active{opacity:1;}
+  section.beat .eyebrow{
+    display:block; font-size:13px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--red); font-weight:700; margin-bottom:14px; border:none; padding:0;
+  }
   h2.beat-title{
-    font-family:'Fraunces', serif; font-weight:500;
+    font-weight:800; text-transform:uppercase;
     font-size:26px; margin:0 0 8px;
   }
-  p.beat-sub{color:var(--ink-soft); font-size:15px; line-height:1.6; margin:0 0 32px; max-width:52ch;}
+  p.beat-sub{color:var(--ink-soft); font-size:15px; line-height:1.6; margin:0 0 30px; max-width:52ch;}
 
   /* --------------------------------------------------------- checkout -- */
   .checkout{
-    background:var(--card); border:1px solid var(--line); border-radius:6px;
+    background:var(--bg-raised); border:1px solid var(--divider); border-radius:var(--radius);
     padding:28px; margin-bottom:20px;
   }
-  .product-row{display:flex; justify-content:space-between; align-items:baseline; padding-bottom:18px; border-bottom:1px solid var(--line); margin-bottom:20px;}
-  .product-name{font-family:'Fraunces', serif; font-size:19px;}
-  .product-meta{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft);}
-  .product-price{font-family:'IBM Plex Mono', monospace; font-size:15px;}
+  .product-row{display:flex; justify-content:space-between; align-items:baseline; padding-bottom:20px; border-bottom:1px solid var(--divider); margin-bottom:24px;}
+  .product-name{font-weight:800; font-size:19px; text-transform:uppercase;}
+  .product-meta{font-size:12px; letter-spacing:.04em; color:var(--ink-faint); margin-top:5px;}
+  .product-price{font-weight:800; font-size:16px;}
 
-  .field-label{font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:10px; display:block;}
-  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;}
+  .field-label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:8px; display:block;}
+  .chips{display:flex; border:1px solid var(--divider-strong); margin-bottom:26px;}
   .chip{
-    font-family:'IBM Plex Mono', monospace; font-size:12.5px;
-    padding:9px 14px; border-radius:20px; border:1px solid var(--line);
-    background:transparent; cursor:pointer; color:var(--ink); transition:all .15s ease;
+    flex:1; font-size:13.5px; font-weight:600;
+    padding:11px 8px; border-radius:0; border:none; border-right:1px solid var(--divider-strong);
+    background:transparent; cursor:pointer; color:var(--ink-soft); transition:all .15s ease;
   }
-  .chip.selected{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+  .chip:last-child{border-right:none;}
+  .chip.selected{background:var(--red); color:#fff;}
 
   .ghost-field{
-    border:1px dashed var(--line); border-radius:var(--radius);
-    padding:14px 16px; margin-bottom:26px; position:relative;
-    background:repeating-linear-gradient(135deg, transparent, transparent 8px, rgba(28,42,58,.03) 8px, rgba(28,42,58,.03) 9px);
+    border:1px dashed var(--divider-strong); border-radius:var(--radius);
+    padding:16px 18px; margin-bottom:26px; position:relative;
+    background:none;
   }
-  .ghost-field .field-label{margin-bottom:4px; text-decoration:line-through; text-decoration-color:var(--stamp); text-decoration-thickness:1.5px;}
-  .ghost-field .ghost-note{font-size:13px; color:var(--ink-soft); font-style:italic;}
+  .ghost-field .field-label{margin-bottom:4px; text-decoration:line-through; text-decoration-color:var(--red); text-decoration-thickness:1.5px;}
+  .ghost-field .ghost-note{font-size:13px; color:var(--ink-faint); font-style:italic;}
 
   /* ------------------------------------------------------------ ticket -- */
   .ticket-stage{min-height:1px; margin:8px 0 28px;}
   .ticket{
-    background:var(--card);
-    border:1px solid var(--ink);
-    border-radius:2px;
-    padding:26px 26px 22px;
+    background:var(--bg-raised);
+    border:1px solid var(--divider);
+    border-radius:var(--radius);
+    padding:28px;
     position:relative;
-    transform:scale(.94) rotate(-.6deg);
+    transform:translateY(8px);
     opacity:0;
-    transition:transform .45s cubic-bezier(.2,.8,.2,1.2), opacity .3s ease;
+    transition:transform .35s ease, opacity .3s ease;
   }
-  .ticket.in{transform:scale(1) rotate(-.6deg); opacity:1;}
-  .ticket::before{
-    content:""; position:absolute; left:-1px; right:-1px; bottom:-1px; height:14px;
-    background-image:radial-gradient(circle at 8px 0, var(--paper) 5px, transparent 5.5px);
-    background-size:16px 14px; background-position:0 -7px;
-  }
-  .ticket-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px;}
-  .ticket-head .t-eyebrow{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.12em; color:var(--ink-soft); text-transform:uppercase;}
-  .s2id{font-family:'Fraunces', serif; font-size:22px; letter-spacing:.01em;}
-  .ticket-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px 24px; font-family:'IBM Plex Mono', monospace; font-size:13px;}
-  .ticket-grid .k{color:var(--ink-soft); font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px;}
+  .ticket.in{transform:translateY(0); opacity:1;}
+  .ticket::before{ content:none; }
+  .ticket-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px;}
+  .ticket-head .t-eyebrow{font-size:11px; letter-spacing:.06em; color:var(--ink-faint); text-transform:uppercase;}
+  .s2id{font-weight:800; font-size:22px; font-variant-numeric:tabular-nums;}
+  .ticket-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px 24px; font-size:13px;}
+  .ticket-grid .k{color:var(--ink-faint); font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px;}
   .ticket-grid .v{color:var(--ink);}
-  .ticket-caption{font-size:13.5px; color:var(--ink-soft); margin-top:20px; padding-top:16px; border-top:1px dashed var(--line);}
+  .ticket-caption{font-size:13px; color:var(--ink-soft); margin-top:22px; padding-top:18px; border-top:1px dashed var(--divider);}
 
   /* ---------------------------------------------------------- inspector -- */
   .db-table{
-    background:var(--card); border:1px solid var(--line); border-radius:6px; overflow:hidden; margin-bottom:12px;
+    background:var(--bg); border:1px solid var(--divider); border-radius:var(--radius); overflow:hidden; margin-bottom:12px;
   }
-  .db-row{display:grid; grid-template-columns:1.6fr 1fr .7fr 1fr; font-family:'IBM Plex Mono', monospace; font-size:12.5px;}
-  .db-row > div{padding:12px 14px; border-bottom:1px solid var(--line); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .db-row{display:grid; grid-template-columns:1.6fr 1fr .7fr 1fr; font-size:13.5px;}
+  .db-row > div{padding:12px 16px; border-bottom:1px solid var(--divider); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .db-row:last-child > div{border-bottom:none;}
-  .db-row.head > div{background:var(--paper-deep); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft);}
-  .db-empty-note{font-size:12.5px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; margin-bottom:32px;}
+  .db-row.head > div{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:600;}
+  .db-empty-note{font-size:12.5px; color:var(--ink-faint); margin-bottom:32px;}
 
-  .attacks{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:8px;}
+  .attacks{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:8px;}
   @media(max-width:560px){.attacks{grid-template-columns:1fr;}}
   .attack-card{
-    background:var(--card); border:1px solid var(--line); border-radius:6px; padding:18px;
+    background:var(--bg-raised); border:1px solid var(--divider); border-radius:var(--radius); padding:22px;
     display:flex; flex-direction:column; gap:12px; min-height:118px;
   }
-  .attack-card .a-title{font-size:13.5px; font-weight:500;}
-  .attack-card .a-desc{font-size:12px; color:var(--ink-soft); line-height:1.5; flex:1;}
+  .attack-card .a-title{font-size:15px; font-weight:800; text-transform:uppercase;}
+  .attack-card .a-desc{font-size:13px; color:var(--ink-soft); line-height:1.5; flex:1;}
   .attack-btn{
-    align-self:flex-start; font-family:'IBM Plex Mono', monospace; font-size:12px;
+    align-self:flex-start; font-size:13.5px; font-weight:700; letter-spacing:.02em; text-transform:uppercase;
     background:transparent; border:1px solid var(--ink); color:var(--ink);
-    padding:8px 12px; border-radius:var(--radius); cursor:pointer;
+    padding:9px 16px; border-radius:var(--radius); cursor:pointer;
   }
-  .attack-btn:hover{background:var(--ink); color:var(--paper);}
+  .attack-btn:hover{background:var(--ink); color:#fff;}
   .result{
-    margin-top:2px; font-family:'IBM Plex Mono', monospace; font-size:12px;
-    display:none; align-items:center; gap:10px; opacity:0; transform:translateY(-4px);
+    margin-top:2px; font-size:12px;
+    display:none; align-items:flex-start; gap:8px; opacity:0; transform:translateY(-4px);
     transition:opacity .25s ease, transform .25s ease;
   }
   .result.show{display:flex; opacity:1; transform:translateY(0);}
   .stamp-mark{
-    font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:11px; letter-spacing:.08em;
-    border:2px solid currentColor; border-radius:3px; padding:2px 7px;
-    transform:rotate(-6deg); display:inline-block; flex-shrink:0;
+    font-weight:700; font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+    border:1px solid currentColor; border-radius:0; padding:4px 8px;
+    display:inline-block; flex-shrink:0; white-space:nowrap;
   }
-  .stamp-mark.deny{color:var(--stamp);}
-  .stamp-mark.pass{color:var(--route);}
+  .stamp-mark.deny{color:var(--red);}
+  .stamp-mark.pass{color:var(--ok);}
   .result-text{color:var(--ink-soft);}
 
   /* -------------------------------------------------------------- close -- */
-  .close-line{font-family:'Fraunces', serif; font-size:20px; line-height:1.5; max-width:44ch; margin:0 0 14px;}
-  .fine{font-size:12.5px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace;}
+  .close-line{font-weight:800; font-size:21px; line-height:1.4; max-width:44ch; margin:0 0 16px;}
+  .fine{font-size:11.5px; letter-spacing:.04em; color:var(--ink-faint);}
   footer{padding:60px 0 20px;}
 
   @media(prefers-reduced-motion: reduce){
@@ -196,7 +193,7 @@
 </style>
 </head>
 <body>
-<div class="grain"></div>
+<div class="topbar"><img src="./assets/logo-large.png" alt="Ship2MyID"></div>
 <div class="topnav">
   <a href="./index.html">← Choose a different flow</a>
   <a href="./operator-flow.html">See the operator flow →</a>
@@ -204,7 +201,7 @@
 <div class="wrap">
 
   <header class="hero">
-    <div class="eyebrow"><span class="dot"></span>SHIP2MYID — WORKING DEMO, RUNNING LIVE IN THIS PAGE</div>
+    <div class="eyebrow">Live in this page — nothing is staged</div>
     <h1 class="headline">The address that was never asked for.</h1>
     <p class="lede">Place an order. Then look at what the merchant actually kept. Every derivation and every check below runs in your browser right now — nothing is staged.</p>
     <button class="btn" id="btn-start">Place the order <span class="arrow">→</span></button>
@@ -212,7 +209,7 @@
 
   <!-- ================================================== DISPATCH ===== -->
   <section class="beat" id="beat-dispatch" hidden>
-    <div class="eyebrow">DISPATCH</div>
+    <div class="eyebrow">01 · Dispatch</div>
     <h2 class="beat-title">Checkout</h2>
     <p class="beat-sub">A normal order, at a normal merchant. Watch the field that's missing.</p>
 
@@ -245,7 +242,7 @@
 
   <!-- ================================================== MANIFEST ===== -->
   <section class="beat" id="beat-manifest" hidden>
-    <div class="eyebrow">MANIFEST</div>
+    <div class="eyebrow">02 · Manifest</div>
     <h2 class="beat-title">What the merchant is holding</h2>
     <p class="beat-sub">This ticket is the entire transaction, from the merchant's side. It routes a parcel. It cannot be read as a place.</p>
     <button class="btn ghost" id="btn-to-inspection">See what they actually kept <span class="arrow">→</span></button>
@@ -253,7 +250,7 @@
 
   <!-- ================================================= INSPECTION ===== -->
   <section class="beat" id="beat-inspection" hidden>
-    <div class="eyebrow">INSPECTION</div>
+    <div class="eyebrow">03 · Inspection</div>
     <h2 class="beat-title">The merchant's entire record</h2>
     <p class="beat-sub">Every column that exists, on a live table. Nothing is hidden below the fold — this is all of it.</p>
 
@@ -293,7 +290,7 @@
 
   <!-- ======================================================= CLOSE ==== -->
   <section class="beat" id="beat-close" hidden>
-    <div class="eyebrow">CLOSE</div>
+    <div class="eyebrow">04 · Close</div>
     <p class="close-line">Same derivation, same checks, running in this page — not a recorded screen capture.</p>
     <p class="fine" id="session-note"></p>
     <button class="btn ghost" id="btn-again">Run it again ↻</button>

@@ -4,51 +4,54 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ship2MyID — pick what to verify</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="./assets/logo-small.png">
 <style>
+  .topbar{display:flex; align-items:center; padding:22px clamp(20px,5vw,72px); border-bottom:1px solid var(--divider);}
+  .topbar img{height:32px; width:auto; display:block;}
   :root{
-    --paper:#E7E3D8; --card:#F1EEE5; --ink:#1C2A3A; --ink-soft:#5B6472;
-    --stamp:#A63D2F; --route:#3D6B52; --line:#C7C0AC;
+    --bg:#ffffff; --bg-raised:#F6F4EF; --ink:#161616; --ink-soft:rgba(22,22,22,.66);
+    --ink-faint:rgba(22,22,22,.46); --red:#D0021B; --red-dark:#A5010F;
+    --divider:rgba(22,22,22,.14); --divider-strong:rgba(22,22,22,.28); --ok:#1F6F43;
   }
   *{box-sizing:border-box;}
-  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif; -webkit-font-smoothing:antialiased;}
-  .wrap{max-width:920px; margin:0 auto; padding:100px 24px 80px;}
-  .eyebrow{font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); display:flex; align-items:center; gap:10px; margin-bottom:22px;}
-  .eyebrow .dot{width:6px; height:6px; border-radius:50%; background:var(--stamp);}
-  h1{font-family:'Fraunces', serif; font-weight:500; font-size:clamp(32px,5.5vw,50px); line-height:1.08; letter-spacing:-.01em; margin:0 0 18px; max-width:14ch;}
-  p.lede{font-size:16.5px; line-height:1.6; color:var(--ink-soft); max-width:52ch; margin:0 0 56px;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:920px; margin:0 auto; padding:72px 24px 80px;}
+  .eyebrow{font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--red); display:inline-flex; align-items:center; gap:8px; margin-bottom:22px; border:1px solid var(--red); padding:6px 12px;}
+  .eyebrow .dot{display:none;}
+  h1{font-weight:700; font-size:clamp(30px,5.5vw,44px); line-height:1.2; letter-spacing:0; margin:0 0 18px; max-width:18ch;}
+  p.lede{font-size:16px; line-height:1.6; color:var(--ink-soft); max-width:52ch; margin:0 0 56px;}
 
   .choice{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
   @media(max-width:680px){.choice{grid-template-columns:1fr;}}
   a.card{
     display:block; text-decoration:none; color:var(--ink);
-    background:var(--card); border:1px solid var(--line); border-radius:8px;
+    background:var(--bg-raised); border:1px solid var(--divider);
     padding:32px 28px; position:relative; overflow:hidden;
-    transition:transform .18s ease, border-color .18s ease;
+    transition:border-color .18s ease;
   }
-  a.card:hover{transform:translateY(-3px); border-color:var(--ink);}
-  .card .k-eyebrow{font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:14px;}
-  .card h2{font-family:'Fraunces', serif; font-weight:500; font-size:24px; margin:0 0 12px;}
+  a.card:hover{border-color:var(--ink);}
+  .card .k-eyebrow{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:14px; font-weight:600;}
+  .card h2{font-weight:800; text-transform:uppercase; font-size:22px; margin:0 0 12px;}
   .card p{font-size:14px; line-height:1.6; color:var(--ink-soft); margin:0 0 26px;}
-  .card .go{font-family:'IBM Plex Mono', monospace; font-size:12.5px; display:inline-flex; align-items:center; gap:8px;}
+  .card .go{font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.02em; color:var(--red); display:inline-flex; align-items:center; gap:8px;}
   .card .go .arrow{transition:transform .15s ease;}
   a.card:hover .go .arrow{transform:translateX(3px);}
 
   .glyph{width:38px; height:38px; margin-bottom:20px;}
 
-  .foot{margin-top:56px; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft);}
+  .foot{margin-top:56px; font-size:11.5px; letter-spacing:.04em; color:var(--ink-faint);}
 </style>
 </head>
 <body>
+<div class="topbar"><img src="./assets/logo-large.png" alt="Ship2MyID"></div>
 <div class="wrap">
-  <div class="eyebrow"><span class="dot"></span>SHIP2MYID — WORKING DEMO</div>
+  <div class="eyebrow">Live in this page — nothing is staged</div>
   <h1>Pick which side of the transaction you want to verify.</h1>
   <p class="lede">Same address, same ticket, same guarantee — looked at from two different desks. Nothing here is pre-recorded; both flows run their own cryptography live in your browser.</p>
 
   <div class="choice">
     <a class="card" href="./consumer-flow.html">
-      <svg class="glyph" viewBox="0 0 40 40" fill="none"><rect x="6" y="10" width="28" height="20" rx="2" stroke="#1C2A3A" stroke-width="1.6"/><path d="M6 14h28M14 10v-2a2 2 0 012-2h8a2 2 0 012 2v2" stroke="#1C2A3A" stroke-width="1.6"/></svg>
+      <svg class="glyph" viewBox="0 0 40 40" fill="none"><rect x="6" y="10" width="28" height="20" stroke="#161616" stroke-width="1.6"/><path d="M6 14h28M14 10v-2a2 2 0 012-2h8a2 2 0 012 2v2" stroke="#161616" stroke-width="1.6"/></svg>
       <div class="k-eyebrow">Buyer's desk</div>
       <h2>Consumer flow</h2>
       <p>Place an order with no address field, watch the ticket get minted, then open the merchant's own database and try to break it yourself.</p>
@@ -56,7 +59,7 @@
     </a>
 
     <a class="card" href="./operator-flow.html">
-      <svg class="glyph" viewBox="0 0 40 40" fill="none"><rect x="8" y="8" width="8" height="8" fill="#1C2A3A"/><rect x="24" y="8" width="8" height="8" fill="#1C2A3A"/><rect x="8" y="24" width="8" height="8" fill="#1C2A3A"/><rect x="24" y="24" width="4" height="4" fill="#1C2A3A"/><rect x="30" y="24" width="2" height="2" fill="#1C2A3A"/><rect x="24" y="30" width="2" height="2" fill="#1C2A3A"/><rect x="28" y="28" width="4" height="4" fill="#1C2A3A"/></svg>
+      <svg class="glyph" viewBox="0 0 40 40" fill="none"><rect x="8" y="8" width="8" height="8" fill="#161616"/><rect x="24" y="8" width="8" height="8" fill="#161616"/><rect x="8" y="24" width="8" height="8" fill="#161616"/><rect x="24" y="24" width="4" height="4" fill="#161616"/><rect x="30" y="24" width="2" height="2" fill="#161616"/><rect x="24" y="30" width="2" height="2" fill="#161616"/><rect x="28" y="28" width="4" height="4" fill="#161616"/></svg>
       <div class="k-eyebrow">Operator's desk</div>
       <h2>Operator flow</h2>
       <p>Generate the actual scannable label for that ticket, verify it offline at the sorting bench, and see the network mark that follows the parcel to the merchant's own tracking page.</p>
