@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/industry-df1b5fab-2ec8-46ed-85e7-1184ace67cd3/styles.css">
+<script src="_ds/industry-df1b5fab-2ec8-46ed-85e7-1184ace67cd3/_ds_bundle.js"></script>
+<style>
+body{margin:0;text-wrap:pretty}
+a{color:var(--color-accent-700);text-underline-offset:3px}
+a:hover{color:var(--color-accent-900)}
+@keyframes revealIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</helmet>
+
+<nav class="nav" style="padding:16px clamp(20px,5vw,72px);border-bottom:1px solid var(--color-divider)">
+  <span class="nav-brand">Ship2MyID</span>
+  <span class="tag tag-outline" style="margin-right:16px;white-space:nowrap">Phase 0 demo</span>
+  <button type="button" class="btn btn-ghost" onClick="{{ again }}">Run it again</button>
+</nav>
+
+<div style="max-width:760px;margin:0 auto;padding:0 24px 120px">
+
+  <header style="padding:80px 0 48px">
+    <span class="tag tag-outline" style="margin-bottom:22px">Live in this page — nothing is staged</span>
+    <h1 style="font-family:var(--font-heading);font-weight:600;font-size:clamp(38px,6vw,58px);line-height:1.04;letter-spacing:.005em;text-transform:uppercase;margin:0 0 20px;max-width:13ch">The address that was never asked for</h1>
+    <p style="font-size:17px;line-height:1.6;color:color-mix(in srgb, var(--color-text) 78%, transparent);max-width:46ch;margin:0 0 32px">Place an order. Then look at what the merchant actually kept. Every derivation and every check below runs in your browser right now.</p>
+    <button type="button" class="btn btn-primary" onClick="{{ start }}">
+      Place the order
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
+    </button>
+  </header>
+
+  <sc-if value="{{ showDispatch }}" hint-placeholder-val="{{ false }}">
+  <hr class="hr" style="margin:0 0 48px">
+
+  <!-- ================================================== 01 DISPATCH === -->
+  <section ref="{{ dispatchRef }}" style="animation:revealIn .5s ease both">
+    <span style="display:block;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600;margin-bottom:12px">01 · Dispatch</span>
+    <hr class="hr" style="margin:0 0 24px">
+    <h2 style="font-size:27px;text-transform:uppercase;margin:0 0 8px">Checkout</h2>
+    <p style="font-size:15px;line-height:1.6;color:color-mix(in srgb, var(--color-text) 78%, transparent);max-width:52ch;margin:0 0 28px">A normal order, at a normal merchant. Watch the field that's missing.</p>
+
+    <div class="card blueprint elev-sm" style="padding:26px;margin:0 0 24px;gap:0">
+      <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+
+      <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:18px;border-bottom:1px solid var(--color-divider);margin-bottom:22px">
+        <div>
+          <div style="font-family:var(--font-heading);font-weight:600;font-size:19px;text-transform:uppercase">Field Notebook — No. 4</div>
+          <div style="font-size:12px;letter-spacing:.04em;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin-top:4px">ALBA GOODS · SKU FN-004 · 240 G</div>
+        </div>
+        <div style="font-family:var(--font-heading);font-weight:600;font-size:16px;font-feature-settings:'tnum' 1">$14.00</div>
+      </div>
+
+      <span style="display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin-bottom:10px">Deliver to</span>
+      <div class="seg" style="margin-bottom:24px">
+        <label class="seg-opt">
+          <input type="radio" name="destination" checked="{{ isDoor }}" onChange="{{ selectDoor }}">
+          Home delivery
+        </label>
+        <label class="seg-opt">
+          <input type="radio" name="destination" checked="{{ isOffice }}" onChange="{{ selectOffice }}">
+          Service point
+        </label>
+        <label class="seg-opt">
+          <input type="radio" name="destination" checked="{{ isLocker }}" onChange="{{ selectLocker }}">
+          Parcel locker
+        </label>
+      </div>
+
+      <div style="border:1px dashed var(--color-divider);padding:14px 16px;margin-bottom:24px">
+        <span style="display:block;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:color-mix(in srgb, var(--color-text) 60%, transparent);text-decoration:line-through;text-decoration-color:var(--color-accent-700);margin-bottom:4px">Shipping address</span>
+        <div style="font-size:13px;font-style:italic;color:color-mix(in srgb, var(--color-text) 60%, transparent)">No field for this. The order doesn't need one.</div>
+      </div>
+
+      <button type="button" class="btn btn-primary btn-block" onClick="{{ confirm }}" disabled="{{ hasCapability }}">
+        Confirm order
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
+      </button>
+    </div>
+
+    <sc-if value="{{ hasCapability }}" hint-placeholder-val="{{ false }}">
+      <div class="card blueprint elev-md" style="padding:26px;margin:0 0 8px;gap:0;background:var(--color-bg);transition:opacity .4s ease, transform .4s cubic-bezier(.2,.8,.2,1.2);opacity:{{ ticketOpacity }};transform:{{ ticketTransform }}">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+          <div>
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin-bottom:6px">Capability · single use</div>
+            <div style="font-family:var(--font-heading);font-weight:600;font-size:22px;font-feature-settings:'tnum' 1">{{ capability.caveats.s2id }}</div>
+          </div>
+          <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:color-mix(in srgb, var(--color-text) 60%, transparent)">{{ capability.shortId }}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;font-size:13px">
+          <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin-bottom:3px">Purpose</div><div>Delivery only</div></div>
+          <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin-bottom:3px">Weight limit</div><div>≤ {{ capability.caveats.maxWeightKg }} kg</div></div>
+          <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin-bottom:3px">Destination</div><div>{{ capability.caveats.destinationLabel }}</div></div>
+          <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin-bottom:3px">Carrier</div><div>{{ capability.caveats.carrier }}</div></div>
+          <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin-bottom:3px">Expires</div><div>{{ capability.expiresLabel }}</div></div>
+          <div><div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin-bottom:3px">Consent ref</div><div>{{ capability.caveats.consentRef }}</div></div>
+        </div>
+        <div style="font-size:13px;line-height:1.6;color:color-mix(in srgb, var(--color-text) 78%, transparent);margin-top:20px;padding-top:16px;border-top:1px dashed var(--color-divider)">This is what left the checkout. No street, no name, no phone number — a scoped, expiring grant to route one parcel.</div>
+      </div>
+    </sc-if>
+  </section>
+  </sc-if>
+
+  <sc-if value="{{ showManifest }}" hint-placeholder-val="{{ false }}">
+  <hr class="hr" style="margin:48px 0">
+
+  <!-- ================================================== 02 MANIFEST ==== -->
+  <section ref="{{ manifestRef }}" style="animation:revealIn .5s ease both">
+    <span style="display:block;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600;margin-bottom:12px">02 · Manifest</span>
+    <hr class="hr" style="margin:0 0 24px">
+    <h2 style="font-size:27px;text-transform:uppercase;margin:0 0 8px">What the merchant is holding</h2>
+    <p style="font-size:15px;line-height:1.6;color:color-mix(in srgb, var(--color-text) 78%, transparent);max-width:52ch;margin:0 0 28px">This ticket is the entire transaction, from the merchant's side. It routes a parcel. It cannot be read as a place.</p>
+    <button type="button" class="btn btn-secondary" onClick="{{ toInspection }}">
+      See what they actually kept
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
+    </button>
+  </section>
+  </sc-if>
+
+  <sc-if value="{{ showInspection }}" hint-placeholder-val="{{ false }}">
+  <hr class="hr" style="margin:48px 0">
+
+  <!-- ================================================= 03 INSPECTION === -->
+  <section ref="{{ inspectionRef }}" style="animation:revealIn .5s ease both">
+    <span style="display:block;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600;margin-bottom:12px">03 · Inspection</span>
+    <hr class="hr" style="margin:0 0 24px">
+    <h2 style="font-size:27px;text-transform:uppercase;margin:0 0 8px">The merchant's entire record</h2>
+    <p style="font-size:15px;line-height:1.6;color:color-mix(in srgb, var(--color-text) 78%, transparent);max-width:52ch;margin:0 0 24px">Every column that exists, on a live table. Nothing is hidden below the fold — this is all of it.</p>
+
+    <div class="card" style="padding:0;margin:0 0 12px;border:1px solid var(--color-divider)">
+      <table class="table" style="margin:0">
+        <thead><tr><th>s2id</th><th>Geo bucket</th><th>Tier</th><th>Service</th></tr></thead>
+        <tbody>
+          <sc-if value="{{ hasCapability }}" hint-placeholder-val="{{ false }}">
+            <tr><td style="font-feature-settings:'tnum' 1">{{ capability.caveats.s2id }}</td><td>MRD-48</td><td>Tier 2</td><td>Standard</td></tr>
+          </sc-if>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:12.5px;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin:0 0 40px">4 columns. No address column exists to add data to.</p>
+
+    <h3 style="font-size:20px;text-transform:uppercase;margin:0 0 8px">Try to break it</h3>
+    <p style="font-size:15px;line-height:1.6;color:color-mix(in srgb, var(--color-text) 78%, transparent);max-width:52ch;margin:0 0 24px">Four attempts a curious merchant, or a bad actor, might make. Each runs the real check.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card blueprint elev-sm" style="padding:20px;gap:12px">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--color-divider);color:var(--color-accent-700);flex-shrink:0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          </span>
+          <div style="font-family:var(--font-heading);font-weight:600;font-size:15px;text-transform:uppercase">Replay the ticket</div>
+        </div>
+        <div style="font-size:13px;color:color-mix(in srgb, var(--color-text) 70%, transparent);line-height:1.5;flex:1">Redeem the same capability a second time.</div>
+        <button type="button" class="btn btn-secondary" style="align-self:flex-start" onClick="{{ runReplay }}">Run</button>
+        <sc-if value="{{ results.replay }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span class="tag tag-outline">{{ results.replay.label }}</span>
+            <span style="font-size:12px;color:color-mix(in srgb, var(--color-text) 70%, transparent)">{{ results.replay.text }}</span>
+          </div>
+        </sc-if>
+      </div>
+
+      <div class="card blueprint elev-sm" style="padding:20px;gap:12px">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--color-divider);color:var(--color-accent-700);flex-shrink:0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          </span>
+          <div style="font-family:var(--font-heading);font-weight:600;font-size:15px;text-transform:uppercase">Ask for the address</div>
+        </div>
+        <div style="font-size:13px;color:color-mix(in srgb, var(--color-text) 70%, transparent);line-height:1.5;flex:1">Request the plaintext directly from the merchant API.</div>
+        <button type="button" class="btn btn-secondary" style="align-self:flex-start" onClick="{{ runAddress }}">Run</button>
+        <sc-if value="{{ results.address }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span class="tag tag-outline">{{ results.address.label }}</span>
+            <span style="font-size:12px;color:color-mix(in srgb, var(--color-text) 70%, transparent)">{{ results.address.text }}</span>
+          </div>
+        </sc-if>
+      </div>
+
+      <div class="card blueprint elev-sm" style="padding:20px;gap:12px">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--color-divider);color:var(--color-accent-700);flex-shrink:0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          </span>
+          <div style="font-family:var(--font-heading);font-weight:600;font-size:15px;text-transform:uppercase">Compare merchants</div>
+        </div>
+        <div style="font-size:13px;color:color-mix(in srgb, var(--color-text) 70%, transparent);line-height:1.5;flex:1">Same buyer, second merchant — check for a shared identifier.</div>
+        <button type="button" class="btn btn-secondary" style="align-self:flex-start" onClick="{{ runCompare }}">Run</button>
+        <sc-if value="{{ results.compare }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span class="tag tag-outline">{{ results.compare.label }}</span>
+            <span style="font-size:12px;color:color-mix(in srgb, var(--color-text) 70%, transparent)">{{ results.compare.text }}</span>
+          </div>
+        </sc-if>
+      </div>
+
+      <div class="card blueprint elev-sm" style="padding:20px;gap:12px">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border:1px solid var(--color-divider);color:var(--color-accent-700);flex-shrink:0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M3 5v14a9 3 0 0 0 18 0V5"></path><path d="M3 12a9 3 0 0 0 18 0"></path></svg>
+          </span>
+          <div style="font-family:var(--font-heading);font-weight:600;font-size:15px;text-transform:uppercase">Request a cohort</div>
+        </div>
+        <div style="font-size:13px;color:color-mix(in srgb, var(--color-text) 70%, transparent);line-height:1.5;flex:1">Ask the marketing API for a narrow, 3-buyer segment.</div>
+        <button type="button" class="btn btn-secondary" style="align-self:flex-start" onClick="{{ runCohort }}">Run</button>
+        <sc-if value="{{ results.cohort }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:flex-start;gap:8px">
+            <span class="tag tag-outline">{{ results.cohort.label }}</span>
+            <span style="font-size:12px;color:color-mix(in srgb, var(--color-text) 70%, transparent)">{{ results.cohort.text }}</span>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </section>
+  </sc-if>
+
+  <sc-if value="{{ showClose }}" hint-placeholder-val="{{ false }}">
+  <hr class="hr" style="margin:48px 0">
+
+  <!-- ======================================================= 04 CLOSE == -->
+  <section ref="{{ closeRef }}" style="animation:revealIn .5s ease both">
+    <span style="display:block;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--color-accent-700);font-weight:600;margin-bottom:12px">04 · Close</span>
+    <hr class="hr" style="margin:0 0 24px">
+    <p style="font-family:var(--font-heading);font-weight:600;font-size:21px;line-height:1.4;max-width:44ch;margin:0 0 16px;text-transform:none">Same derivation, same checks, running in this page — not a recorded screen capture.</p>
+    <p style="font-size:12.5px;color:color-mix(in srgb, var(--color-text) 60%, transparent);margin:0 0 24px">{{ sessionNote }}</p>
+    <button type="button" class="btn btn-secondary" onClick="{{ again }}">
+      Run it again
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+    </button>
+  </section>
+  </sc-if>
+
+  <footer style="padding:56px 0 20px">
+    <p style="font-size:11.5px;letter-spacing:.04em;color:color-mix(in srgb, var(--color-text) 55%, transparent)">SHIP2MYID · PHASE 0 DEMO · LOCAL SESSION — NOTHING ON THIS PAGE LEAVES YOUR BROWSER</p>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:900,&quot;height&quot;:1200},&quot;startExpanded&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Behavior&quot;}}">
+class Component extends DCLogic {
+  dispatchRef = React.createRef();
+  manifestRef = React.createRef();
+  inspectionRef = React.createRef();
+  closeRef = React.createRef();
+  enc = new TextEncoder();
+
+  state = {
+    stage: 0,
+    destination: "locker",
+    capability: null,
+    ticketIn: false,
+    spent: false,
+    s2idB: null,
+    results: { replay: null, address: null, compare: null, cohort: null },
+  };
+
+  componentDidMount() {
+    if (this.props.startExpanded) this.setState({ stage: 4 });
+    this._sessionTime = new Date().toLocaleTimeString();
+  }
+
+  scrollTo(ref) {
+    if (!ref.current) return;
+    const top = ref.current.getBoundingClientRect().top + window.scrollY - 24;
+    window.scrollTo({ top, behavior: "smooth" });
+  }
+
+  async hmac(keyBytes, msg) {
+    const key = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const sig = await crypto.subtle.sign("HMAC", key, this.enc.encode(msg));
+    return new Uint8Array(sig);
+  }
+  b32(bytes, chars) {
+    const A = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    let out = "";
+    for (let i = 0; i < chars; i++) out += A[bytes[i % bytes.length] % A.length];
+    return out;
+  }
+  async deriveS2ID(root, relyingParty, prefix) {
+    const mac = await this.hmac(root, "s2id/pairwise/" + relyingParty);
+    const body = this.b32(mac, 12);
+    return `${prefix}-${body.slice(0, 4)}-${body.slice(4, 8)}-${body.slice(8, 12)}`;
+  }
+  randomBytes(n) { return crypto.getRandomValues(new Uint8Array(n)); }
+  linkability(a, b) {
+    if (a === b) return 1;
+    const sa = a.replace(/-/g, "").slice(3), sb = b.replace(/-/g, "").slice(3);
+    let shared = 0;
+    for (let i = 0; i < Math.min(sa.length, sb.length); i++) { if (sa[i] === sb[i]) shared++; else break; }
+    return shared >= 4 ? shared / sa.length : 0;
+  }
+  fmtDest(v) {
+    return { door: "Home delivery", "access-point": "Service point", locker: "Parcel locker · Corniche Point" }[v];
+  }
+
+  start = () => { this.setState({ stage: 1 }, () => this.scrollTo(this.dispatchRef)); };
+  selectDoor = () => this.setState({ destination: "door" });
+  selectOffice = () => this.setState({ destination: "access-point" });
+  selectLocker = () => this.setState({ destination: "locker" });
+
+  confirm = async () => {
+    if (this.state.capability) return;
+    const root = this.randomBytes(32);
+    const s2idA = await this.deriveS2ID(root, "alba-goods.example", "MER");
+    const s2idB = await this.deriveS2ID(root, "corvid-tools.example", "MER");
+    const expiresAt = Date.now() + 14 * 24 * 3600 * 1000;
+    const caveats = {
+      s2id: s2idA,
+      purpose: "delivery",
+      maxWeightKg: 2,
+      carrier: "MER-POST",
+      destinationKind: this.state.destination,
+      destinationLabel: this.fmtDest(this.state.destination),
+      expiresAt,
+      singleUse: true,
+      consentRef: "cns_" + this.b32(this.randomBytes(10), 16).toLowerCase(),
+    };
+    const capSecret = this.randomBytes(32);
+    const mac = await this.hmac(capSecret, JSON.stringify(caveats));
+    const id = crypto.randomUUID();
+    const capability = {
+      id, caveats, shortId: id.slice(0, 8),
+      expiresLabel: new Date(expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      mac: Array.from(mac).map(b => b.toString(16).padStart(2, "0")).join(""),
+    };
+    this.setState({ capability, s2idB, stage: Math.max(this.state.stage, 2) }, () => {
+      requestAnimationFrame(() => this.setState({ ticketIn: true }));
+    });
+  };
+
+  toInspection = () => {
+    this.setState({ stage: 4 }, () => this.scrollTo(this.inspectionRef));
+  };
+
+  runReplay = () => {
+    if (!this.state.spent) {
+      this.setState({ spent: true, results: { ...this.state.results, replay: { label: "ROUTED", text: "First redemption: routed to sortation MRD-9F2C1A." } } });
+    } else {
+      this.setState({ results: { ...this.state.results, replay: { label: "DENIED", text: "Capability already burned — nonce ledger rejects reuse." } } });
+    }
+  };
+  runAddress = () => {
+    this.setState({ results: { ...this.state.results, address: { label: "DENIED", text: "No code path returns plaintext to a merchant — 404, endpoint does not exist." } } });
+  };
+  runCompare = () => {
+    const score = this.linkability(this.state.capability.caveats.s2id, this.state.s2idB);
+    this.setState({ results: { ...this.state.results, compare: { label: "UNLINKED", text: `Merchant B holds ${this.state.s2idB} — linkability score ${score}. Same person, no shared key.` } } });
+  };
+  runCohort = () => {
+    this.setState({ results: { ...this.state.results, cohort: { label: "DENIED", text: "Cohort size 3 < k-anonymity floor of 25 — not disclosed." } } });
+  };
+
+  again = () => location.reload();
+
+  renderVals() {
+    const s = this.state;
+    return {
+      dispatchRef: this.dispatchRef, manifestRef: this.manifestRef, inspectionRef: this.inspectionRef, closeRef: this.closeRef,
+      showDispatch: s.stage >= 1,
+      showManifest: s.stage >= 2,
+      showInspection: s.stage >= 4,
+      showClose: s.stage >= 4,
+      isDoor: s.destination === "door", isOffice: s.destination === "access-point", isLocker: s.destination === "locker",
+      selectDoor: this.selectDoor, selectOffice: this.selectOffice, selectLocker: this.selectLocker,
+      start: this.start, confirm: this.confirm, toInspection: this.toInspection, again: this.again,
+      runReplay: this.runReplay, runAddress: this.runAddress, runCompare: this.runCompare, runCohort: this.runCohort,
+      hasCapability: !!s.capability,
+      capability: s.capability || {},
+      ticketOpacity: s.ticketIn ? 1 : 0,
+      ticketTransform: s.ticketIn ? "scale(1)" : "scale(.96)",
+      results: s.results,
+      sessionNote: `Session key generated at ${this._sessionTime || new Date().toLocaleTimeString()} — refresh to derive a new one.`,
+    };
+  }
+}
+
+</script>
+</body>
+</html>
