@@ -19,6 +19,8 @@ export type ConsentEntry = {
   scope: string[];
   at: number;
   expiresAt: number;
+  /** [A9] Hash of the disclosure policy in force when this grant was decided — see packages/policy/src/policy.ts. Not every append() is a disclosure decision, so this is optional. */
+  policyHash?: string;
   prevHash: string;
   hash: string;
 };

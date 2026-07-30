@@ -4,7 +4,7 @@
   "type": "module",
   "engines": { "node": ">=22.6" },
   "scripts": {
-    "test": "node --experimental-strip-types --test tests/invariants/invariants.test.ts tests/invariants/label.test.ts tests/invariants/exceptions.test.ts tests/invariants/exceptions-nonwidening.test.ts tests/invariants/exceptions-error-shape.test.ts",
+    "test": "node --experimental-strip-types --test tests/invariants/invariants.test.ts tests/invariants/label.test.ts tests/invariants/exceptions.test.ts tests/invariants/exceptions-nonwidening.test.ts tests/invariants/exceptions-error-shape.test.ts tests/invariants/policy-async.test.ts",
     "lint:privacy": "node --experimental-strip-types tools/privacy-lint/lint.ts",
     "verify": "npm run lint:privacy && npm run test",
     "demo": "node --experimental-strip-types tools/demo/walkthrough.ts"

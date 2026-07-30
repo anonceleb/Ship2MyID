@@ -139,10 +139,14 @@ The spec had "which demographic attributes may a merchant see" as hardcoded logi
 is wrong for a system meant to span jurisdictions: disclosure rules are exactly the thing
 that varies by country and changes without a software release.
 
-**[A9] — scheduled, Phase 1.** Attribute-disclosure and tier-gating rules become signed
-Rego policy artifacts, versioned and hot-reloadable, with the *policy hash recorded in the
-audit entry* so any historical decision can be replayed against the rules in force at the
-time.
+**[A9] — implemented.** `packages/policy` gives tier-gating a signed, versioned,
+hot-reloadable `DisclosurePolicy` (Ed25519-signed the same way a request envelope is).
+`Platform.createShipment` reads `minTierToShip` off the active policy rather than a
+hardcoded constant, and records the policy's hash on the consent entry it mints —
+`PolicyStore.byHash()` replays any past decision against the exact rules that governed it,
+even after a hot-reload. INV-19 proves the hash is recorded, replayable, and that reload is
+both signature-verified and monotonic. Not literal Rego/OPA — a typed ruleset gives the same
+audit guarantee without an external runtime in a demo.
 
 ### 2.4 Asynchronous callbacks are the honest shape
 
@@ -150,9 +154,15 @@ Beckn pairs every action with a callback — `search`/`on_search`, `init`/`on_in
 `confirm`/`on_confirm`. This is not ceremony; it reflects that counterparties are slow,
 batch-oriented, and occasionally offline. Postal back-ends are all three.
 
-**[A10] — scheduled, Phase 1.** Capability minting and sortation move to request/callback
-pairs. A synchronous design would work in the demo and fail on contact with a real
-operator's overnight batch.
+**[A10] — implemented.** Capability minting moves to a request/callback pair —
+`Platform.requestShipment()` / `onShipmentReady()` / `processBatch()`, built on the generic
+`packages/network` `AsyncExchange`, after Beckn's confirm/on_confirm. The synchronous
+return is an ack, not the capability; minting is deferred to a batch step so the async
+boundary is real rather than assumed. Sortation stays request/response for now — it already
+runs behind Vault.resolve()'s audit-before-plaintext invariant, which does not benefit from
+also decoupling this call, so extending the same pair there is deferred rather than forced.
+INV-20 proves the result is unobservable before the batch runs and that a callback lands
+exactly once per transaction.
 
 ### 2.5 Grievance and settlement are protocol layers, not afterthoughts
 
@@ -251,8 +261,8 @@ they are logging into a merchant's tool.
 | A6 | Participant accreditation tiers + suspension | AUA/KUA licensing | Phase 0 ✅ |
 | A7 | Ed25519 message signing, moved forward from Phase 3 | ONDC/Beckn | Phase 0 ✅ |
 | A8 | Registry as the participant authority | ONDC registry | Phase 0 ✅ |
-| A9 | Disclosure rules as signed Rego artifacts; policy hash in audit | Beckn ONIX / OPA | Phase 1 |
-| A10 | Async request/callback pairs | Beckn action/on_action | Phase 1 |
+| A9 | Disclosure rules as signed Rego artifacts; policy hash in audit | Beckn ONIX / OPA | Phase 1 ✅ |
+| A10 | Async request/callback pairs | Beckn action/on_action | Phase 1 ✅ |
 | A11 | Dispute layer: operator attests delivery to a capability | ONDC IGM/RSF | Phase 4.5 |
 | — | Household barrier in the data model from day one | Posten | Phase 0 ✅ |
 | — | Consumer-inspectable "what we hold" + correction | Posten / BankID | Phase 1 |

@@ -117,7 +117,7 @@ Stated plainly so they don't get mistaken for design:
 
 ## Next
 
-Phase 1 remaining: Rust vault, Postgres + RLS, SD-JWT VC issuance, signed Rego
-disclosure policies ([A9]), async callbacks ([A10]), consumer "what we hold" view.
-COSE offline labels ([A4]) and Phase 2 (Exceptions — returns, failed delivery,
-revocation, redirect, refund) are done.
+Phase 1 remaining: Rust vault, Postgres + RLS, SD-JWT VC issuance, consumer
+"what we hold" view. COSE offline labels ([A4]), signed disclosure policies
+([A9]), async request/callback capability minting ([A10]), and Phase 2
+(Exceptions — returns, failed delivery, revocation, redirect, refund) are done.
