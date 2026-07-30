@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ship2MyID — operator console</title>
+<style>
+  :root{
+    --paper:#E7E3D8; --paper-deep:#DCD7C8; --card:#F1EEE5; --ink:#1C2A3A; --ink-soft:#5B6472;
+    --stamp:#A63D2F; --route:#3D6B52; --amber:#B98430; --line:#C7C0AC; --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:'IBM Plex Sans', sans-serif; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:760px; margin:0 auto; padding:0 24px 140px;}
+
+  .topnav{max-width:760px; margin:0 auto; padding:28px 24px 0; display:flex; justify-content:space-between; align-items:center;}
+  .topnav a{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft); text-decoration:none;}
+  .topnav a:hover{color:var(--ink);}
+
+  header.hero{padding:56px 0 64px;}
+  .eyebrow{font-family:'IBM Plex Mono', monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft); display:flex; align-items:center; gap:10px; margin-bottom:22px;}
+  .eyebrow .dot{width:6px; height:6px; border-radius:50%; background:var(--route);}
+  h1.headline{font-family:'Fraunces', serif; font-weight:500; font-size:clamp(30px,5.4vw,46px); line-height:1.08; letter-spacing:-.01em; margin:0 0 20px; max-width:14ch;}
+  p.lede{font-size:16px; line-height:1.6; color:var(--ink-soft); max-width:48ch; margin:0 0 32px;}
+  .btn{font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:.03em; background:var(--ink); color:var(--paper); border:none; padding:14px 22px; border-radius:var(--radius); cursor:pointer; display:inline-flex; align-items:center; gap:10px; transition:transform .15s ease, background .15s ease;}
+  .btn:hover{background:#0f1926; transform:translateY(-1px);}
+  .btn[disabled]{opacity:.35; cursor:default; pointer-events:none;}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line);}
+  .btn.ghost:hover{background:var(--card);}
+  .btn .arrow{transition:transform .15s ease;} .btn:hover .arrow{transform:translateX(3px);}
+
+  section.beat{border-top:1px solid var(--line); padding:56px 0 8px; opacity:.25; filter:saturate(.5); transition:opacity .5s ease, filter .5s ease;}
+  section.beat.active{opacity:1; filter:none;}
+  h2.beat-title{font-family:'Fraunces', serif; font-weight:500; font-size:26px; margin:0 0 8px;}
+  p.beat-sub{color:var(--ink-soft); font-size:15px; line-height:1.6; margin:0 0 32px; max-width:52ch;}
+
+  /* ------------------------------------------------------------ manifest intake -- */
+  .manifest-card{background:var(--card); border:1px solid var(--line); border-radius:6px; padding:26px; margin-bottom:24px;}
+  .m-row{display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+  .m-row:last-child{border-bottom:none;}
+  .m-row .k{color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em;}
+  .m-row .v{font-family:'IBM Plex Mono', monospace;}
+
+  /* ---------------------------------------------------------------------- label -- */
+  .label-stage{display:none; gap:28px; margin-bottom:8px;}
+  .label-stage.show{display:grid; grid-template-columns:auto 1fr;}
+  @media(max-width:560px){.label-stage.show{grid-template-columns:1fr;}}
+  .qr-frame{background:#fff; border:1px solid var(--ink); border-radius:4px; padding:14px; width:172px; height:172px; display:flex; align-items:center; justify-content:center;}
+  .token-stamp{font-family:'IBM Plex Mono', monospace; font-size:9.5px; line-height:1.35; color:var(--ink); word-break:break-all; padding:6px;}
+  .token-stamp .cap{display:block; font-size:8px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-soft); margin-top:8px; word-break:normal;}
+  .label-meta{font-family:'IBM Plex Mono', monospace; font-size:12.5px;}
+  .label-meta .row{margin-bottom:10px;}
+  .label-meta .k{color:var(--ink-soft); font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; display:block; margin-bottom:2px;}
+  .sig-line{word-break:break-all; font-size:10.5px; color:var(--ink-soft); line-height:1.5; margin-top:14px; padding-top:12px; border-top:1px dashed var(--line);}
+
+  /* ----------------------------------------------------------------------- scan -- */
+  .scan-console{background:var(--card); border:1px solid var(--line); border-radius:6px; padding:24px; margin-bottom:20px;}
+  .scan-readout{font-family:'IBM Plex Mono', monospace; font-size:12.5px; min-height:20px; margin-top:16px; display:flex; align-items:center; gap:10px; opacity:0; transform:translateY(-4px); transition:opacity .25s ease, transform .25s ease;}
+  .scan-readout.show{opacity:1; transform:translateY(0);}
+  .stamp-mark{font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:11px; letter-spacing:.08em; border:2px solid currentColor; border-radius:3px; padding:2px 7px; transform:rotate(-6deg); display:inline-block; flex-shrink:0;}
+  .stamp-mark.pass{color:var(--route);} .stamp-mark.deny{color:var(--stamp);}
+  .scan-note{font-size:12.5px; color:var(--ink-soft); margin-top:14px;}
+
+  /* --------------------------------------------------------------- tracking page -- */
+  .tracking-mock{background:#fff; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-bottom:8px;}
+  .tm-head{background:var(--ink); color:var(--paper); padding:16px 22px; font-family:'Fraunces', serif; font-size:17px; display:flex; justify-content:space-between; align-items:center;}
+  .tm-head .store{font-size:13px; font-family:'IBM Plex Sans', sans-serif; opacity:.7;}
+  .tm-body{padding:24px 22px;}
+  .tm-status{display:flex; align-items:center; gap:10px; margin-bottom:20px;}
+  .tm-status .led{width:9px; height:9px; border-radius:50%; background:var(--route);}
+  .tm-status .txt{font-family:'IBM Plex Mono', monospace; font-size:13px;}
+  .tm-steps{display:flex; gap:6px; margin-bottom:24px;}
+  .tm-steps div{flex:1; height:4px; background:var(--route); border-radius:2px;}
+  .tm-steps div.pending{background:var(--line);}
+
+  .badge{
+    display:inline-flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:20px;
+    padding:7px 13px 7px 9px; cursor:pointer; position:relative; background:var(--card);
+  }
+  .badge .mark{width:16px; height:16px; border-radius:50%; background:var(--ink); display:flex; align-items:center; justify-content:center;}
+  .badge .mark svg{width:9px; height:9px;}
+  .badge .txt{font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.02em; color:var(--ink-soft);}
+  .badge:hover{border-color:var(--ink);}
+  .badge-pop{
+    display:none; position:absolute; bottom:calc(100% + 10px); left:0; width:270px;
+    background:var(--ink); color:var(--paper); border-radius:6px; padding:14px 16px;
+    font-family:'IBM Plex Sans', sans-serif; font-size:12.5px; line-height:1.55; z-index:5;
+  }
+  .badge-pop::after{content:""; position:absolute; top:100%; left:18px; border:6px solid transparent; border-top-color:var(--ink);}
+  .badge:hover .badge-pop{display:block;}
+
+  /* --------------------------------------------------------------------- stats -- */
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:28px 0 8px;}
+  @media(max-width:560px){.stats{grid-template-columns:1fr;}}
+  .stat{background:var(--card); border:1px solid var(--line); border-radius:6px; padding:18px;}
+  .stat .num{font-family:'Fraunces', serif; font-size:26px;}
+  .stat .lbl{font-family:'IBM Plex Mono', monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); margin-top:4px;}
+
+  .close-line{font-family:'Fraunces', serif; font-size:19px; line-height:1.5; max-width:44ch; margin:0 0 14px;}
+  .fine{font-size:12.5px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace;}
+  footer{padding:60px 0 20px;}
+
+  @media(prefers-reduced-motion: reduce){*{transition:none !important; animation:none !important;}}
+</style>
+</head>
+<body>
+
+<div class="topnav">
+  <a href="./index.html">← Choose a different flow</a>
+  <a href="./consumer-flow.html">See the consumer flow →</a>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow"><span class="dot"></span>OPERATOR CONSOLE — REPUBLIC OF MERIDIA POST</div>
+    <h1 class="headline">The label that routes a parcel without ever printing where it's going.</h1>
+    <p class="lede">A ticket arrives from the merchant side. Turn it into a real, signed label — then verify it the way a handheld scanner would, offline, at the sorting bench.</p>
+    <button class="btn" id="btn-start">Open the next manifest <span class="arrow">→</span></button>
+  </header>
+
+  <!-- =============================================== INTAKE ===== -->
+  <section class="beat" id="beat-intake">
+    <div class="eyebrow">INTAKE</div>
+    <h2 class="beat-title">Manifest queue</h2>
+    <p class="beat-sub">One capability, handed off from checkout. This is everything the operator receives — no name, no street.</p>
+    <div class="manifest-card" id="manifest-card"></div>
+    <button class="btn" id="btn-generate">Generate label <span class="arrow">→</span></button>
+  </section>
+
+  <!-- ============================================== LABEL ===== -->
+  <section class="beat" id="beat-label">
+    <div class="eyebrow">LABEL</div>
+    <h2 class="beat-title">Printed / scannable form</h2>
+    <p class="beat-sub">A real Ed25519-signed, compact token — this is the exact string a printed QR would encode. (This browser-only demo renders it as text rather than a scannable QR bitmap, to avoid a third-party rendering dependency; the signature below is the same one that would go on the parcel.)</p>
+    <div class="label-stage" id="label-stage"></div>
+    <button class="btn ghost" id="btn-to-scan">Take it to the sorting bench <span class="arrow">→</span></button>
+  </section>
+
+  <!-- =============================================== SCAN ===== -->
+  <section class="beat" id="beat-scan">
+    <div class="eyebrow">SCAN</div>
+    <h2 class="beat-title">Offline verification</h2>
+    <p class="beat-sub">A handheld scanner has no network at 5am in a sorting hall. Verification runs against a cached operator key — nothing is looked up.</p>
+    <div class="scan-console">
+      <button class="btn" id="btn-scan">Scan label</button>
+      <div class="scan-readout" id="scan-readout"></div>
+      <div class="scan-note">Then try a tampered copy — same QR, one byte flipped in transit.</div>
+      <button class="btn ghost" id="btn-scan-bad" style="margin-top:12px;">Scan a corrupted label</button>
+      <div class="scan-readout" id="scan-readout-bad"></div>
+    </div>
+    <button class="btn ghost" id="btn-to-tracking">See the merchant's tracking page <span class="arrow">→</span></button>
+  </section>
+
+  <!-- ============================================ TRACKING ===== -->
+  <section class="beat" id="beat-tracking">
+    <div class="eyebrow">MERCHANT SURFACE</div>
+    <h2 class="beat-title">What the buyer sees</h2>
+    <p class="beat-sub">This page belongs to Alba Goods, not to us. The mark in the corner is the one thing we asked for in return for none of this being their problem to build.</p>
+
+    <div class="tracking-mock">
+      <div class="tm-head"><span>Your order</span><span class="store">ALBA GOODS</span></div>
+      <div class="tm-body">
+        <div class="tm-status"><span class="led"></span><span class="txt">Out for delivery · Locker · Corniche Point</span></div>
+        <div class="tm-steps"><div></div><div></div><div></div><div class="pending"></div></div>
+        <div class="badge" id="badge">
+          <span class="mark"><svg viewBox="0 0 12 12"><path d="M2 6l3 3 5-6" stroke="#E7E3D8" stroke-width="1.6" fill="none"/></svg></span>
+          <span class="txt">Powered by Ship2MyID</span>
+          <div class="badge-pop">This delivery was routed without your address ever reaching Alba Goods. Verified by Republic of Meridia Post — tap to see how.</div>
+        </div>
+      </div>
+    </div>
+    <p class="scan-note" style="margin-top:14px;">Hover the mark. That tooltip is the entire pitch to a buyer who's never heard of us — and the reason a merchant keeps it turned on.</p>
+  </section>
+
+  <!-- =============================================== CLOSE ===== -->
+  <section class="beat" id="beat-close">
+    <div class="eyebrow">CLOSE</div>
+    <div class="stats">
+      <div class="stat"><div class="num" id="stat-labels">1</div><div class="lbl">Labels issued, this session</div></div>
+      <div class="stat"><div class="num">0</div><div class="lbl">Addresses printed</div></div>
+      <div class="stat"><div class="num">1</div><div class="lbl">Merchant carrying the mark</div></div>
+    </div>
+    <p class="close-line">The Ed25519 signature is real, verified against a public key only — the private key never left the operator side of this page. The badge is the only part of this that's a business decision, not a cryptographic one.</p>
+    <button class="btn ghost" id="btn-again">Run it again ↻</button>
+  </section>
+
+  <footer>
+    <p class="fine">SHIP2MYID · OPERATOR CONSOLE DEMO · LOCAL SESSION — NOTHING ON THIS PAGE LEAVES YOUR BROWSER</p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const enc = new TextEncoder();
+
+  async function hmac(keyBytes, msg){
+    const key = await crypto.subtle.importKey("raw", keyBytes, {name:"HMAC", hash:"SHA-256"}, false, ["sign"]);
+    return new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(msg)));
+  }
+  function b32(bytes, chars){
+    const A = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    let out = ""; for (let i=0;i<chars;i++) out += A[bytes[i % bytes.length] % A.length];
+    return out;
+  }
+  function randomBytes(n){ return crypto.getRandomValues(new Uint8Array(n)); }
+  function toB64url(bytes){
+    let s = ""; for (const b of bytes) s += String.fromCharCode(b);
+    return btoa(s).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  }
+  function fromB64url(str){
+    const s = str.replace(/-/g,"+").replace(/_/g,"/").padEnd(str.length + (4 - str.length % 4) % 4, "=");
+    const bin = atob(s);
+    const out = new Uint8Array(bin.length);
+    for (let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  async function deriveS2ID(root, relyingParty, prefix="MER"){
+    const mac = await hmac(root, "s2id/pairwise/" + relyingParty);
+    const body = b32(mac, 12);
+    return `${prefix}-${body.slice(0,4)}-${body.slice(4,8)}-${body.slice(8,12)}`;
+  }
+
+  function reveal(id){ document.getElementById(id).classList.add("active"); }
+
+  // ------------------------------------------------------------- session --
+  // opPrivateKey never leaves the operator side of this demo — everything
+  // labeled "scanner" below only ever touches scannerPublicKey, the same
+  // split packages/labels/src/label.ts makes between minting (Zone 1, has
+  // the private key) and offline verification (a handheld scanner, public
+  // key material only, cached ahead of time, no network).
+  let root, s2id, opPrivateKey, scannerPublicKey, sortationCode, tokenB64, tokenSig;
+
+  document.getElementById("btn-start").addEventListener("click", async () => {
+    root = randomBytes(32);
+    const opKeyPair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+    opPrivateKey = opKeyPair.privateKey;
+    // Only the exported public bytes travel to the "scanner" — re-imported
+    // into a key object that can verify but was never given signing rights.
+    const rawPublic = await crypto.subtle.exportKey("raw", opKeyPair.publicKey);
+    scannerPublicKey = await crypto.subtle.importKey("raw", rawPublic, { name: "Ed25519" }, false, ["verify"]);
+    s2id = await deriveS2ID(root, "alba-goods.example");
+    sortationCode = "MRD-" + b32(randomBytes(10), 10);
+
+    document.getElementById("manifest-card").innerHTML = `
+      <div class="m-row"><div class="k">S2ID</div><div class="v">${s2id}</div></div>
+      <div class="m-row"><div class="k">Purpose</div><div class="v">Delivery · single use</div></div>
+      <div class="m-row"><div class="k">Weight limit</div><div class="v">2 kg</div></div>
+      <div class="m-row"><div class="k">Destination</div><div class="v">Locker · Corniche Point</div></div>
+      <div class="m-row"><div class="k">Carrier</div><div class="v">MER-POST</div></div>
+    `;
+    reveal("beat-intake");
+    document.getElementById("beat-intake").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+
+  // ---------------------------------------------------------- generate ---
+  document.getElementById("btn-generate").addEventListener("click", async (e) => {
+    e.target.disabled = true;
+    const tokenPayload = {
+      s2id, sortationCode, carrier:"MER-POST", weightKg:2,
+      exp: Date.now() + 14*24*3600*1000,
+      kid: "meridia-post-op-key-" + b32(randomBytes(4),4),
+    };
+    const payloadBytes = enc.encode(JSON.stringify(tokenPayload));
+    tokenB64 = toB64url(payloadBytes);
+    // Signed over the encoded bytes that actually travel — not a live JS
+    // object — so verification later decodes and checks the same string a
+    // real scanner would read off the label, not a copy still sitting in
+    // this page's memory.
+    const sig = new Uint8Array(await crypto.subtle.sign("Ed25519", opPrivateKey, enc.encode(tokenB64)));
+    tokenSig = Array.from(sig).map(b=>b.toString(16).padStart(2,"0")).join("");
+
+    const stage = document.getElementById("label-stage");
+    stage.innerHTML = `
+      <div class="qr-frame"><div class="token-stamp">${tokenB64}.${tokenSig.slice(0,32)}<span class="cap">Literal QR payload — Ed25519-signed, base64url</span></div></div>
+      <div class="label-meta">
+        <div class="row"><span class="k">Kid (issued to)</span>${s2id}</div>
+        <div class="row"><span class="k">Sortation</span>${sortationCode}</div>
+        <div class="row"><span class="k">Signing key</span>${tokenPayload.kid}</div>
+        <div class="row"><span class="k">Expires</span>${new Date(tokenPayload.exp).toLocaleDateString(undefined,{month:"short",day:"numeric"})}</div>
+        <div class="sig-line">sig · ${tokenSig.slice(0,48)}…</div>
+      </div>`;
+    stage.classList.add("show");
+
+    reveal("beat-label");
+  });
+
+  document.getElementById("btn-to-scan").addEventListener("click", () => {
+    reveal("beat-scan");
+    document.getElementById("beat-scan").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+
+  /**
+   * Offline verification, exactly as a handheld scanner would do it: decode
+   * the payload out of the token string that was actually scanned (never a
+   * live object still sitting in page memory), verify the Ed25519
+   * signature against scannerPublicKey only — the private key is never in
+   * scope here — then check expiry.
+   */
+  async function verifyToken(b64, sigHex){
+    const sigBytes = new Uint8Array(sigHex.match(/.{2}/g).map(h => parseInt(h,16)));
+    const ok = await crypto.subtle.verify("Ed25519", scannerPublicKey, sigBytes, enc.encode(b64));
+    if (!ok) throw new Error("signature verification failed — label rejected");
+    const payload = JSON.parse(new TextDecoder().decode(fromB64url(b64)));
+    if (Date.now() > payload.exp) throw new Error("label expired");
+    return payload;
+  }
+
+  document.getElementById("btn-scan").addEventListener("click", async () => {
+    const el = document.getElementById("scan-readout");
+    try {
+      const payload = await verifyToken(tokenB64, tokenSig);
+      el.innerHTML = `<span class="stamp-mark pass">VERIFIED</span><span>routes to ${payload.sortationCode} — no address returned, none requested.</span>`;
+    } catch (err) {
+      el.innerHTML = `<span class="stamp-mark deny">REJECTED</span><span>${err.message}</span>`;
+    }
+    el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
+  });
+
+  document.getElementById("btn-scan-bad").addEventListener("click", async () => {
+    // Flip one character in the payload itself — the label copy's own claim
+    // ("same QR, one byte flipped in transit") — not just the signature.
+    // Since the signature covers tokenB64 verbatim, any change to the
+    // payload bytes fails verification the same way a forged signature would.
+    const i = Math.floor(tokenB64.length / 2);
+    const flipped = tokenB64[i] === "A" ? "B" : "A";
+    const tamperedB64 = tokenB64.slice(0, i) + flipped + tokenB64.slice(i + 1);
+    const el = document.getElementById("scan-readout-bad");
+    try {
+      await verifyToken(tamperedB64, tokenSig);
+      el.innerHTML = `<span class="stamp-mark pass">VERIFIED</span><span>unexpected — should not happen</span>`;
+    } catch (err) {
+      el.innerHTML = `<span class="stamp-mark deny">REJECTED</span><span>${err.message} — a corrupted or forged label fails offline, same as it would at any bench.</span>`;
+    }
+    el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
+  });
+
+  document.getElementById("btn-to-tracking").addEventListener("click", () => {
+    reveal("beat-tracking");
+    document.getElementById("beat-tracking").scrollIntoView({behavior:"smooth", block:"start"});
+    setTimeout(() => reveal("beat-close"), 400);
+  });
+
+  document.getElementById("btn-again").addEventListener("click", () => location.reload());
+})();
+</script>
+</body>
+</html>

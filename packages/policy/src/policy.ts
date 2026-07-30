@@ -73,10 +73,20 @@ export class PolicyStore {
     this.#active = this.#accept(initial);
   }
 
+  /**
+   * Frozen, not just verified: `active()`/`byHash()` hand out this exact
+   * object by reference, and a caller mutating `.policy` in place would
+   * silently change the live disclosure rule with no reload, no version
+   * bump, and no signature — defeating the entire point of a signed,
+   * versioned artifact. Freezing both levels makes that a thrown TypeError
+   * in strict mode instead of a silent bypass.
+   */
   #accept(signed: SignedPolicy): SignedPolicy {
     if (!verifyPolicy(this.#publicKey, signed)) {
       throw new PolicyInvalid(`policy v${signed.policy.version} failed signature verification`);
     }
+    Object.freeze(signed.policy);
+    Object.freeze(signed);
     this.#history.set(signed.hash, signed);
     return signed;
   }

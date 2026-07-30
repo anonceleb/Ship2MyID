@@ -62,10 +62,10 @@ function harness() {
 /* ---------------------------------------------------------- INV-14 ----- */
 test("INV-14: a return capability may never exceed the shipment capability's scope", async () => {
   const h = harness();
-  // Expected shape: Platform.createReturn(shipmentCapability, actorId) -> Capability
+  // Expected shape: Platform.createReturn(shipmentCapability, actorId, subjectRef) -> Capability
   // with purpose:"return", same s2id, maxWeightKg no greater than the original,
   // expiresAt no later, and a FRESH consentRef (never the shipment's own).
-  const returnCap = (h.platform as any).createReturn(h.capability, "alba-goods.example");
+  const returnCap = (h.platform as any).createReturn(h.capability, "alba-goods.example", "sub_1");
   assert.equal(returnCap.caveats.purpose, "return");
   assert.equal(returnCap.caveats.s2id, h.capability.caveats.s2id);
   assert.ok(returnCap.caveats.maxWeightKg <= h.capability.caveats.maxWeightKg);
@@ -120,9 +120,9 @@ test("INV-17: a redirect issues a fresh capability without telling the merchant 
 test("INV-18: refund-without-return makes zero vault calls", async () => {
   const h = harness();
   const resolveCallsBefore = (h.vault as any).__resolveCallCount ?? 0;
-  // Expected shape: Platform.refund(capability, actorId) — settles without
-  // ever asking the vault to decrypt or route anything. Assert indirectly:
-  // the address record's audit trail gains no new entries.
-  (h.platform as any).refund(h.capability, "alba-goods.example");
+  // Expected shape: Platform.refund(capability, actorId, subjectRef) — settles
+  // without ever asking the vault to decrypt or route anything. Assert
+  // indirectly: the address record's audit trail gains no new entries.
+  (h.platform as any).refund(h.capability, "alba-goods.example", "sub_1");
   assert.equal(h.audit.forRecord("rec_1").length, 0, "refund must not touch the vault's audit trail at all");
 });

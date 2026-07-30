@@ -42,12 +42,27 @@ for (const f of walk(join(ROOT, "packages/core"))) {
 }
 
 // --- check 2: no PII-shaped fields in Zone 3 projections ------------------
-const zone3 = readFileSync(join(ROOT, "packages/core/src/core.ts"), "utf8");
-const merchantView = zone3.match(/export type MerchantView = \{([\s\S]*?)\};/)?.[1] ?? "";
-for (const field of merchantView.matchAll(/^\s*(\w+)\??:/gm)) {
-  const name = field[1]!.toLowerCase();
-  if (PII_SHAPED.some((p) => name.includes(p))) {
-    failures.push(`zone3 leakage: MerchantView.${field[1]} is PII-shaped`);
+// Every type that is actually handed to a merchant integration, not just the
+// original one. A reviewer found this list checked MerchantView alone while
+// packages/sdk's CheckoutResult — the type real Phase 3 merchant code
+// receives — went unchecked entirely; a PII-shaped field added there passed
+// lint clean. Add any new merchant-facing projection type here.
+const ZONE3_TYPES: Array<{ file: string; type: string }> = [
+  { file: "packages/core/src/core.ts", type: "MerchantView" },
+  { file: "packages/sdk/src/client.ts", type: "CheckoutResult" },
+];
+for (const { file, type } of ZONE3_TYPES) {
+  const src = readFileSync(join(ROOT, file), "utf8");
+  const body = src.match(new RegExp(`export type ${type} = \\{([\\s\\S]*?)\\};`))?.[1] ?? "";
+  if (!body) {
+    failures.push(`zone3 check misconfigured: ${type} not found in ${file}`);
+    continue;
+  }
+  for (const field of body.matchAll(/^\s*(\w+)\??:/gm)) {
+    const name = field[1]!.toLowerCase();
+    if (PII_SHAPED.some((p) => name.includes(p))) {
+      failures.push(`zone3 leakage: ${type}.${field[1]} (${file}) is PII-shaped`);
+    }
   }
 }
 

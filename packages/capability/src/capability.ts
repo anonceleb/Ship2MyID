@@ -35,15 +35,22 @@ export class CapabilityExpired extends Error {}
 export class CapabilityInvalid extends Error {}
 export class AttenuationWidened extends Error {}
 
-function macOf(secret: Buffer, caveats: Caveats, chain: string[]): string {
+/**
+ * `id` is part of the signed material. Single-use enforcement
+ * (NonceLedger.burn) is keyed on `id` alone — a MAC that didn't cover it
+ * would let any holder mint an unlimited supply of "single-use" tokens by
+ * swapping in a fresh id, since {caveats, chain} would still verify.
+ */
+function macOf(secret: Buffer, id: string, caveats: Caveats, chain: string[]): string {
   return createHmac("sha256", secret)
-    .update(JSON.stringify({ caveats, chain }))
+    .update(JSON.stringify({ id, caveats, chain }))
     .digest("base64url");
 }
 
 export function mint(secret: Buffer, caveats: Caveats): Capability {
   const chain = ["authority"];
-  return { id: randomUUID(), caveats, chain, mac: macOf(secret, caveats, chain) };
+  const id = randomUUID();
+  return { id, caveats, chain, mac: macOf(secret, id, caveats, chain) };
 }
 
 /**
@@ -63,18 +70,27 @@ function assertNotWidened(next: Caveats, prev: Caveats): void {
  * Every field may only narrow. This is enforced here rather than trusted,
  * because the returns path is exactly where a naive implementation re-widens a
  * grant and leaks what the happy path protected.
+ *
+ * `opts.newId` lets a caller (Platform.redirectDelivery) mint the
+ * attenuated capability under a fresh id — needed because a redirect is a
+ * distinct, independently single-use grant from the one it replaces. The id
+ * must be chosen before the MAC is computed, not rewritten after: since
+ * `id` is now signed material (see macOf), overwriting it post-hoc would
+ * produce a capability whose id and mac disagree and fail verify().
  */
 export function attenuate(
   secret: Buffer,
   cap: Capability,
   narrower: Partial<Caveats>,
   by: string,
+  opts: { newId?: string } = {},
 ): Capability {
   const next: Caveats = { ...cap.caveats, ...narrower };
   assertNotWidened(next, cap.caveats);
   if (next.purpose !== cap.caveats.purpose) throw new AttenuationWidened("purpose");
   const chain = [...cap.chain, by];
-  return { id: cap.id, caveats: next, chain, mac: macOf(secret, next, chain) };
+  const id = opts.newId ?? cap.id;
+  return { id, caveats: next, chain, mac: macOf(secret, id, next, chain) };
 }
 
 /**
@@ -100,12 +116,14 @@ export function attenuateToReturn(
   const chain = [...cap.chain, by];
   // A fresh id: a return is a distinct grant, single-use independently of
   // the shipment it descends from — sharing an id would couple their nonce
-  // burns and let redeeming one silently invalidate the other.
-  return { id: randomUUID(), caveats: next, chain, mac: macOf(secret, next, chain) };
+  // burns and let redeeming one silently invalidate the other. Generated
+  // before the MAC, since id is now part of what's signed.
+  const id = randomUUID();
+  return { id, caveats: next, chain, mac: macOf(secret, id, next, chain) };
 }
 
 export function verify(secret: Buffer, cap: Capability, now = Date.now()): void {
-  if (macOf(secret, cap.caveats, cap.chain) !== cap.mac) throw new CapabilityInvalid("bad mac");
+  if (macOf(secret, cap.id, cap.caveats, cap.chain) !== cap.mac) throw new CapabilityInvalid("bad mac");
   if (now > cap.caveats.expiresAt) throw new CapabilityExpired(cap.id);
 }
 

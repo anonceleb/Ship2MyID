@@ -7,7 +7,7 @@ tokens, and the executable privacy invariants.
 Node ≥ 22.6 only — TypeScript executes via native type stripping.
 
 ```bash
-npm run verify   # privacy-lint + all invariants (INV-1..22, A4, non-widening)
+npm run verify   # privacy-lint + all invariants (INV-1..26, A4, non-widening)
 npm run demo     # narrated end-to-end ship flow
 ```
 
@@ -136,3 +136,41 @@ means here (per SHIP2MYID_DEMO_SPEC.md §12: "a third party integrates from
 the published SDK without talking to us") is met at the SDK layer; the
 drop-in widget is a thin client over the same `MerchantClient` and is
 next.
+
+## Privacy-invariant-reviewer remediation (INV-23..26)
+
+A privacy-invariant-reviewer pass against the Phase 0–3 build found six
+findings the 47 tests up to that point didn't cover, all fixed and pinned:
+
+- **The capability MAC didn't cover `id`** — single-use enforcement is keyed
+  on `id`, so any holder could swap in a fresh one and replay a "single-use"
+  capability indefinitely. Fixed in `packages/capability`; `id` is now signed
+  material. INV-23.
+- **`createReturn()`/`refund()` had no ownership check** — any caller could
+  supply any `actorId` and self-mint a return/refund consent record for
+  someone else's shipment. Fixed with the same `subjectRef` check
+  `revoke()`/`redirectDelivery()` already had. INV-24.
+- **`PolicyStore.active()` returned a live mutable reference** — a caller
+  could mutate the disclosure policy in place with no reload, version bump,
+  or signature. Fixed with `Object.freeze()`. INV-25.
+- **`Platform.processBatch()` had no error isolation** — one merchant's
+  quota/tier rejection threw out of the settlement loop and silently
+  dropped every later pending transaction. Fixed with per-transaction
+  try/catch and a real nack channel (`AsyncExchange.fail()`/`onError()`,
+  `Platform.onShipmentError()`). `requestShipment()` is now also metered at
+  request time, not only at settlement. INV-26.
+- **`operator-flow.html`'s label verification was cosmetic** — it signed
+  and verified with the same symmetric HMAC key, and the "scan" step
+  re-read an in-memory object rather than the actual encoded token. Now
+  uses real Web Crypto Ed25519 (asymmetric — the scanner only ever holds
+  the public key), verifies the decoded token string, and the tamper test
+  flips a payload byte rather than only the signature.
+- **`consumer-flow.html`'s "try to break it" panel was mostly hardcoded
+  strings** — only "compare merchants" ran real logic. "Ask for the
+  address" now inspects the actual ticket object's keys at runtime;
+  "request a cohort" now calls a real `cohortSize()`/`K_ANON_FLOOR` check;
+  "replay" now mirrors `NonceLedger.burn()`'s shape instead of a one-shot
+  flag.
+
+Also: `tools/privacy-lint` checked `MerchantView` only — the actual Phase 3
+merchant-facing type, `CheckoutResult`, went unchecked. It now checks both.

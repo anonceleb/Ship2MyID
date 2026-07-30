@@ -16,7 +16,7 @@
 export class UnknownTransaction extends Error {}
 export class DuplicateCallback extends Error {}
 
-export type TransactionStatus = "pending" | "fulfilled";
+export type TransactionStatus = "pending" | "fulfilled" | "failed";
 
 let counter = 0;
 function nextId(): string {
@@ -24,10 +24,21 @@ function nextId(): string {
   return `txn_${Date.now().toString(36)}${counter.toString(36)}`;
 }
 
+/**
+ * `fail()` is the `on_action` nack half — a transaction can settle with an
+ * error instead of a result (a merchant over quota, a batch step that
+ * threw) without that error escaping into whatever loop is driving
+ * settlement and taking unrelated transactions down with it. Before this
+ * existed, the only way to report a failure was to throw out of the
+ * settlement loop, which — in Platform.processBatch() — silently dropped
+ * every transaction queued after the one that failed.
+ */
 export class AsyncExchange<TResult> {
   #status = new Map<string, TransactionStatus>();
   #results = new Map<string, TResult>();
-  #listeners = new Map<string, Array<(result: TResult) => void>>();
+  #errors = new Map<string, unknown>();
+  #resultListeners = new Map<string, Array<(result: TResult) => void>>();
+  #errorListeners = new Map<string, Array<(error: unknown) => void>>();
 
   /** The synchronous half: an ack that a transaction was opened, not an answer. */
   begin(): string {
@@ -38,8 +49,9 @@ export class AsyncExchange<TResult> {
 
   /**
    * Subscribes to the `on_action` callback for a transaction already begun.
-   * If the callback already landed, the handler fires immediately with the
-   * stored result — subscribing is never a race against delivery.
+   * If the result already landed, the handler fires immediately — subscribing
+   * is never a race against delivery. A transaction that failed instead never
+   * calls this handler; use onError() for that outcome.
    */
   onCallback(transactionId: string, handler: (result: TResult) => void): void {
     if (!this.#status.has(transactionId)) throw new UnknownTransaction(transactionId);
@@ -47,9 +59,21 @@ export class AsyncExchange<TResult> {
       handler(this.#results.get(transactionId) as TResult);
       return;
     }
-    const arr = this.#listeners.get(transactionId) ?? [];
+    const arr = this.#resultListeners.get(transactionId) ?? [];
     arr.push(handler);
-    this.#listeners.set(transactionId, arr);
+    this.#resultListeners.set(transactionId, arr);
+  }
+
+  /** Subscribes to the nack half. Fires immediately if the transaction already failed. */
+  onError(transactionId: string, handler: (error: unknown) => void): void {
+    if (!this.#status.has(transactionId)) throw new UnknownTransaction(transactionId);
+    if (this.#status.get(transactionId) === "failed") {
+      handler(this.#errors.get(transactionId));
+      return;
+    }
+    const arr = this.#errorListeners.get(transactionId) ?? [];
+    arr.push(handler);
+    this.#errorListeners.set(transactionId, arr);
   }
 
   /**
@@ -61,12 +85,23 @@ export class AsyncExchange<TResult> {
    */
   callback(transactionId: string, result: TResult): void {
     if (!this.#status.has(transactionId)) throw new UnknownTransaction(transactionId);
-    if (this.#status.get(transactionId) === "fulfilled") throw new DuplicateCallback(transactionId);
+    if (this.#status.get(transactionId) !== "pending") throw new DuplicateCallback(transactionId);
     this.#status.set(transactionId, "fulfilled");
     this.#results.set(transactionId, result);
-    const listeners = this.#listeners.get(transactionId) ?? [];
-    this.#listeners.delete(transactionId);
+    const listeners = this.#resultListeners.get(transactionId) ?? [];
+    this.#resultListeners.delete(transactionId);
     for (const handler of listeners) handler(result);
+  }
+
+  /** The nack half — settles the transaction as failed instead of fulfilled, exactly once. */
+  fail(transactionId: string, error: unknown): void {
+    if (!this.#status.has(transactionId)) throw new UnknownTransaction(transactionId);
+    if (this.#status.get(transactionId) !== "pending") throw new DuplicateCallback(transactionId);
+    this.#status.set(transactionId, "failed");
+    this.#errors.set(transactionId, error);
+    const listeners = this.#errorListeners.get(transactionId) ?? [];
+    this.#errorListeners.delete(transactionId);
+    for (const handler of listeners) handler(error);
   }
 
   status(transactionId: string): TransactionStatus | undefined {

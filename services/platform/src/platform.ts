@@ -192,9 +192,16 @@ export class Platform {
    * bad envelopes before ever queuing them. createShipment() re-verifies at
    * settlement time in processBatch() — the two checks can be seconds or
    * hours apart, and the envelope may have expired in between.
+   *
+   * [Phase 3] Also metered here, not only at settlement — an over-quota
+   * merchant should not be able to queue unbounded work just because the
+   * actual mint happens later. Settlement still meters again in
+   * createShipment(), since a merchant can exhaust its quota via other
+   * calls between request and batch.
    */
   requestShipment(env: SignedEnvelope, req: ShipmentRequest, subjectRef: string): { transactionId: string } {
-    this.#registry.verify(env, req);
+    const merchant = this.#registry.verify(env, req);
+    this.#meter.consume(merchant.participantId);
     const transactionId = this.#shipments.begin();
     this.#pendingShipments.set(transactionId, { env, req, subjectRef });
     return { transactionId };
@@ -205,18 +212,32 @@ export class Platform {
     this.#shipments.onCallback(transactionId, handler);
   }
 
+  /** Subscribes to the on_create_shipment nack — fires if settlement rejects the request (quota, tier, expired envelope). */
+  onShipmentError(transactionId: string, handler: (error: unknown) => void): void {
+    this.#shipments.onError(transactionId, handler);
+  }
+
   /**
    * Settles every shipment request queued since the last run — the
    * stand-in for the operator's own batch cycle. Exposed as a method the
    * demo and the invariant suite drive explicitly, rather than a timer, so
    * the async boundary is real (a result genuinely cannot be observed
    * before this runs) without making tests race a clock.
+   *
+   * Each transaction is settled independently: one merchant's rejection
+   * (quota, tier, an envelope that expired while queued) reports through
+   * onShipmentError() for that transaction alone — it does not throw out of
+   * the loop and does not touch any other merchant's pending transaction.
    */
   processBatch(): void {
     for (const [transactionId, pending] of [...this.#pendingShipments]) {
       this.#pendingShipments.delete(transactionId);
-      const result = this.createShipment(pending.env, pending.req, pending.subjectRef);
-      this.#shipments.callback(transactionId, result);
+      try {
+        const result = this.createShipment(pending.env, pending.req, pending.subjectRef);
+        this.#shipments.callback(transactionId, result);
+      } catch (err) {
+        this.#shipments.fail(transactionId, err);
+      }
     }
   }
 
@@ -225,10 +246,19 @@ export class Platform {
    * capability. Minted via attenuateToReturn() — never mint() — so a return
    * structurally cannot exceed the shipment's weight or outlive its
    * validity window; only purpose, expiry, and consentRef change.
+   *
+   * `subjectRef` is the consumer authorizing this — checked against the
+   * originating shipment's own consent record, exactly like revoke() and
+   * redirectDelivery() already do. Without this, any caller could supply
+   * any `actorId` and self-mint a return/refund consent record for someone
+   * else's shipment; `actorId` alone was never a proof of who's asking.
    */
-  createReturn(shipmentCap: Capability, actorId: string): Capability {
+  createReturn(shipmentCap: Capability, actorId: string, subjectRef: string): Capability {
     const original = this.#consent.find(shipmentCap.caveats.consentRef);
     if (!original) throw new UnknownCapability("no consent record for the originating shipment");
+    if (original.subject !== subjectRef) {
+      throw new NotAuthorized(`capability ${shipmentCap.id} does not belong to subject ${subjectRef}`);
+    }
 
     const returnWindowMs = 72 * 3600 * 1000;
     const consent = this.#consent.append({
@@ -300,11 +330,19 @@ export class Platform {
       expiresAt: cap.caveats.expiresAt,
     });
 
-    const attenuated = attenuate(this.#capSecret, cap, { destinationKind: newDestinationKind, consentRef: consent.ref }, subjectRef);
     // A fresh id: a redirect is a distinct grant from the shipment it
-    // replaces, single-use independently of it. mac covers {caveats,chain},
-    // not id, so this doesn't invalidate the signature.
-    const redirected: Capability = { ...attenuated, id: randomUUID() };
+    // replaces, single-use independently of it. id is part of the signed
+    // material (see packages/capability's macOf), so the new id must be
+    // chosen before attenuate() computes the mac, not rewritten after —
+    // overwriting it post-hoc would leave the mac covering the old id and
+    // fail verify().
+    const redirected = attenuate(
+      this.#capSecret,
+      cap,
+      { destinationKind: newDestinationKind, consentRef: consent.ref },
+      subjectRef,
+      { newId: randomUUID() },
+    );
     this.#capabilityConsent.set(redirected.id, consent.ref);
     return redirected;
   }
@@ -315,13 +353,21 @@ export class Platform {
    * here calls Vault.resolve() or reads AddressRecord, and there is no
    * vault call added for its own sake — the point of this method is that
    * such a call does not exist.
+   *
+   * `subjectRef` is checked against the originating consent record before
+   * anything is mutated — same ownership rule as createReturn(), and for
+   * the same reason: `actorId` describes who the refund event is granted
+   * to, not who is authorized to trigger it.
    */
-  refund(cap: Capability, actorId: string): void {
-    this.#nonces.revoke(cap.id);
+  refund(cap: Capability, actorId: string, subjectRef: string): void {
     const consentRef = this.#capabilityConsent.get(cap.id) ?? cap.caveats.consentRef;
     const original = this.#consent.find(consentRef);
+    if (!original || original.subject !== subjectRef) {
+      throw new NotAuthorized(`capability ${cap.id} does not belong to subject ${subjectRef}`);
+    }
+    this.#nonces.revoke(cap.id);
     this.#consent.append({
-      subject: original?.subject ?? "unknown",
+      subject: original.subject,
       grantedTo: actorId,
       purpose: "refund",
       scope: ["refund"],

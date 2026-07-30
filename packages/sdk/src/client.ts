@@ -96,4 +96,9 @@ export class MerchantClient {
       });
     });
   }
+
+  /** Subscribes to the on_checkout nack — fires if settlement rejects the request (quota, tier, expired envelope), independently of any other merchant's pending transaction. */
+  onCheckoutError(transactionId: string, handler: (error: unknown) => void): void {
+    this.#platform.onShipmentError(transactionId, handler);
+  }
 }

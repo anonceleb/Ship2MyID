@@ -61,7 +61,7 @@ function harness() {
 
 test("Non-widening: Platform.createReturn's public API exposes no override that could widen maxWeightKg, expiresAt, or destinationKind", () => {
   const h = harness();
-  const returnCap = h.platform.createReturn(h.capability, "alba-goods.example");
+  const returnCap = h.platform.createReturn(h.capability, "alba-goods.example", "sub_1");
   assert.ok(returnCap.caveats.maxWeightKg <= h.capability.caveats.maxWeightKg);
   assert.ok(returnCap.caveats.expiresAt <= h.capability.caveats.expiresAt);
   assert.equal(returnCap.caveats.destinationKind, h.capability.caveats.destinationKind);
@@ -103,5 +103,5 @@ test("Non-widening: revoke and refund mint no capability at all — nothing for 
   const h = harness();
   assert.equal(h.platform.revoke(h.capability.id, "sub_1"), undefined);
   const h2 = harness();
-  assert.equal(h2.platform.refund(h2.capability, "alba-goods.example"), undefined);
+  assert.equal(h2.platform.refund(h2.capability, "alba-goods.example", "sub_1"), undefined);
 });

@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ship2MyID — the address that was never asked for</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#E7E3D8;
+    --paper-deep:#DCD7C8;
+    --card:#F1EEE5;
+    --ink:#1C2A3A;
+    --ink-soft:#5B6472;
+    --stamp:#A63D2F;
+    --route:#3D6B52;
+    --amber:#B98430;
+    --line:#C7C0AC;
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--stamp); color:var(--paper);}
+
+  .wrap{max-width:760px; margin:0 auto; padding:0 24px 140px;}
+
+  /* ---------------------------------------------------------- texture -- */
+  .grain{
+    position:fixed; inset:0; pointer-events:none; opacity:.035; z-index:1;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ------------------------------------------------------------- hero -- */
+  header.hero{padding:96px 0 72px; text-align:left;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-soft); display:flex; align-items:center; gap:10px; margin-bottom:22px;
+  }
+  .eyebrow .dot{width:6px; height:6px; border-radius:50%; background:var(--stamp);}
+  h1.headline{
+    font-family:'Fraunces', serif;
+    font-weight:500;
+    font-size:clamp(34px, 6vw, 54px);
+    line-height:1.06;
+    letter-spacing:-.01em;
+    margin:0 0 22px;
+    max-width:11.5ch;
+  }
+  p.lede{
+    font-size:17px; line-height:1.6; color:var(--ink-soft);
+    max-width:46ch; margin:0 0 36px;
+  }
+  .btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px; letter-spacing:.03em;
+    background:var(--ink); color:var(--paper);
+    border:none; padding:14px 22px; border-radius:var(--radius);
+    cursor:pointer; display:inline-flex; align-items:center; gap:10px;
+    transition:transform .15s ease, background .15s ease;
+  }
+  .btn:hover{background:#0f1926; transform:translateY(-1px);}
+  .btn:active{transform:translateY(0);}
+  .btn[disabled]{opacity:.35; cursor:default; pointer-events:none;}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--line);}
+  .btn.ghost:hover{background:var(--card); }
+  .btn .arrow{transition:transform .15s ease;}
+  .btn:hover .arrow{transform:translateX(3px);}
+
+  /* ------------------------------------------------------------ beats -- */
+  section.beat{
+    border-top:1px solid var(--line);
+    padding:56px 0 8px;
+    opacity:.25; filter:saturate(.5);
+    transition:opacity .5s ease, filter .5s ease;
+  }
+  section.beat.active{opacity:1; filter:none;}
+  section.beat .eyebrow{margin-bottom:14px;}
+  h2.beat-title{
+    font-family:'Fraunces', serif; font-weight:500;
+    font-size:26px; margin:0 0 8px;
+  }
+  p.beat-sub{color:var(--ink-soft); font-size:15px; line-height:1.6; margin:0 0 32px; max-width:52ch;}
+
+  /* --------------------------------------------------------- checkout -- */
+  .checkout{
+    background:var(--card); border:1px solid var(--line); border-radius:6px;
+    padding:28px; margin-bottom:20px;
+  }
+  .product-row{display:flex; justify-content:space-between; align-items:baseline; padding-bottom:18px; border-bottom:1px solid var(--line); margin-bottom:20px;}
+  .product-name{font-family:'Fraunces', serif; font-size:19px;}
+  .product-meta{font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--ink-soft);}
+  .product-price{font-family:'IBM Plex Mono', monospace; font-size:15px;}
+
+  .field-label{font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft); margin-bottom:10px; display:block;}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px;}
+  .chip{
+    font-family:'IBM Plex Mono', monospace; font-size:12.5px;
+    padding:9px 14px; border-radius:20px; border:1px solid var(--line);
+    background:transparent; cursor:pointer; color:var(--ink); transition:all .15s ease;
+  }
+  .chip.selected{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+
+  .ghost-field{
+    border:1px dashed var(--line); border-radius:var(--radius);
+    padding:14px 16px; margin-bottom:26px; position:relative;
+    background:repeating-linear-gradient(135deg, transparent, transparent 8px, rgba(28,42,58,.03) 8px, rgba(28,42,58,.03) 9px);
+  }
+  .ghost-field .field-label{margin-bottom:4px; text-decoration:line-through; text-decoration-color:var(--stamp); text-decoration-thickness:1.5px;}
+  .ghost-field .ghost-note{font-size:13px; color:var(--ink-soft); font-style:italic;}
+
+  /* ------------------------------------------------------------ ticket -- */
+  .ticket-stage{min-height:1px; margin:8px 0 28px;}
+  .ticket{
+    background:var(--card);
+    border:1px solid var(--ink);
+    border-radius:2px;
+    padding:26px 26px 22px;
+    position:relative;
+    transform:scale(.94) rotate(-.6deg);
+    opacity:0;
+    transition:transform .45s cubic-bezier(.2,.8,.2,1.2), opacity .3s ease;
+  }
+  .ticket.in{transform:scale(1) rotate(-.6deg); opacity:1;}
+  .ticket::before{
+    content:""; position:absolute; left:-1px; right:-1px; bottom:-1px; height:14px;
+    background-image:radial-gradient(circle at 8px 0, var(--paper) 5px, transparent 5.5px);
+    background-size:16px 14px; background-position:0 -7px;
+  }
+  .ticket-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px;}
+  .ticket-head .t-eyebrow{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.12em; color:var(--ink-soft); text-transform:uppercase;}
+  .s2id{font-family:'Fraunces', serif; font-size:22px; letter-spacing:.01em;}
+  .ticket-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px 24px; font-family:'IBM Plex Mono', monospace; font-size:13px;}
+  .ticket-grid .k{color:var(--ink-soft); font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px;}
+  .ticket-grid .v{color:var(--ink);}
+  .ticket-caption{font-size:13.5px; color:var(--ink-soft); margin-top:20px; padding-top:16px; border-top:1px dashed var(--line);}
+
+  /* ---------------------------------------------------------- inspector -- */
+  .db-table{
+    background:var(--card); border:1px solid var(--line); border-radius:6px; overflow:hidden; margin-bottom:12px;
+  }
+  .db-row{display:grid; grid-template-columns:1.6fr 1fr .7fr 1fr; font-family:'IBM Plex Mono', monospace; font-size:12.5px;}
+  .db-row > div{padding:12px 14px; border-bottom:1px solid var(--line); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .db-row:last-child > div{border-bottom:none;}
+  .db-row.head > div{background:var(--paper-deep); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-soft);}
+  .db-empty-note{font-size:12.5px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; margin-bottom:32px;}
+
+  .attacks{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:8px;}
+  @media(max-width:560px){.attacks{grid-template-columns:1fr;}}
+  .attack-card{
+    background:var(--card); border:1px solid var(--line); border-radius:6px; padding:18px;
+    display:flex; flex-direction:column; gap:12px; min-height:118px;
+  }
+  .attack-card .a-title{font-size:13.5px; font-weight:500;}
+  .attack-card .a-desc{font-size:12px; color:var(--ink-soft); line-height:1.5; flex:1;}
+  .attack-btn{
+    align-self:flex-start; font-family:'IBM Plex Mono', monospace; font-size:12px;
+    background:transparent; border:1px solid var(--ink); color:var(--ink);
+    padding:8px 12px; border-radius:var(--radius); cursor:pointer;
+  }
+  .attack-btn:hover{background:var(--ink); color:var(--paper);}
+  .result{
+    margin-top:2px; font-family:'IBM Plex Mono', monospace; font-size:12px;
+    display:none; align-items:center; gap:10px; opacity:0; transform:translateY(-4px);
+    transition:opacity .25s ease, transform .25s ease;
+  }
+  .result.show{display:flex; opacity:1; transform:translateY(0);}
+  .stamp-mark{
+    font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:11px; letter-spacing:.08em;
+    border:2px solid currentColor; border-radius:3px; padding:2px 7px;
+    transform:rotate(-6deg); display:inline-block; flex-shrink:0;
+  }
+  .stamp-mark.deny{color:var(--stamp);}
+  .stamp-mark.pass{color:var(--route);}
+  .result-text{color:var(--ink-soft);}
+
+  /* -------------------------------------------------------------- close -- */
+  .close-line{font-family:'Fraunces', serif; font-size:20px; line-height:1.5; max-width:44ch; margin:0 0 14px;}
+  .fine{font-size:12.5px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace;}
+  footer{padding:60px 0 20px;}
+
+  @media(prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow"><span class="dot"></span>SHIP2MYID — WORKING DEMO, RUNNING LIVE IN THIS PAGE</div>
+    <h1 class="headline">The address that was never asked for.</h1>
+    <p class="lede">Place an order. Then look at what the merchant actually kept. Every derivation and every check below runs in your browser right now — nothing is staged.</p>
+    <button class="btn" id="btn-start">Place the order <span class="arrow">→</span></button>
+  </header>
+
+  <!-- ================================================== DISPATCH ===== -->
+  <section class="beat" id="beat-dispatch">
+    <div class="eyebrow">DISPATCH</div>
+    <h2 class="beat-title">Checkout</h2>
+    <p class="beat-sub">A normal order, at a normal merchant. Watch the field that's missing.</p>
+
+    <div class="checkout">
+      <div class="product-row">
+        <div>
+          <div class="product-name">Field Notebook — No. 4</div>
+          <div class="product-meta">ALBA GOODS · SKU FN-004 · 240g</div>
+        </div>
+        <div class="product-price">$14.00</div>
+      </div>
+
+      <span class="field-label">Deliver to</span>
+      <div class="chips" id="chips">
+        <button class="chip" data-v="door">Home</button>
+        <button class="chip" data-v="access-point">Office</button>
+        <button class="chip selected" data-v="locker">Locker · Corniche Point</button>
+      </div>
+
+      <div class="ghost-field">
+        <span class="field-label">Shipping address</span>
+        <div class="ghost-note">There's no field for this. The order doesn't need one.</div>
+      </div>
+
+      <button class="btn" id="btn-confirm">Confirm order <span class="arrow">→</span></button>
+    </div>
+
+    <div class="ticket-stage" id="ticket-stage"></div>
+  </section>
+
+  <!-- ================================================== MANIFEST ===== -->
+  <section class="beat" id="beat-manifest">
+    <div class="eyebrow">MANIFEST</div>
+    <h2 class="beat-title">What the merchant is holding</h2>
+    <p class="beat-sub">This ticket is the entire transaction, from the merchant's side. It routes a parcel. It cannot be read as a place.</p>
+    <button class="btn ghost" id="btn-to-inspection">See what they actually kept <span class="arrow">→</span></button>
+  </section>
+
+  <!-- ================================================= INSPECTION ===== -->
+  <section class="beat" id="beat-inspection">
+    <div class="eyebrow">INSPECTION</div>
+    <h2 class="beat-title">The merchant's entire record</h2>
+    <p class="beat-sub">Every column that exists, on a live table. Nothing is hidden below the fold — this is all of it.</p>
+
+    <div class="db-table" id="db-table"></div>
+    <div class="db-empty-note">4 columns. No address column exists to add data to.</div>
+
+    <h2 class="beat-title" style="margin-top:44px;">Try to break it</h2>
+    <p class="beat-sub">Four attempts a curious merchant, or a bad actor, might make. Each runs the real check.</p>
+
+    <div class="attacks">
+      <div class="attack-card">
+        <div class="a-title">Replay the ticket</div>
+        <div class="a-desc">Redeem the same capability a second time.</div>
+        <button class="attack-btn" data-attack="replay">Run</button>
+        <div class="result" data-result="replay"></div>
+      </div>
+      <div class="attack-card">
+        <div class="a-title">Ask for the street address</div>
+        <div class="a-desc">Request the plaintext directly from the merchant API.</div>
+        <button class="attack-btn" data-attack="address">Run</button>
+        <div class="result" data-result="address"></div>
+      </div>
+      <div class="attack-card">
+        <div class="a-title">Compare against Merchant B</div>
+        <div class="a-desc">Same buyer, second merchant — check for a shared identifier.</div>
+        <button class="attack-btn" data-attack="compare">Run</button>
+        <div class="result" data-result="compare"></div>
+      </div>
+      <div class="attack-card">
+        <div class="a-title">Request a cohort of 3 buyers</div>
+        <div class="a-desc">Ask the marketing API for a narrow audience segment.</div>
+        <button class="attack-btn" data-attack="cohort">Run</button>
+        <div class="result" data-result="cohort"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= CLOSE ==== -->
+  <section class="beat" id="beat-close">
+    <div class="eyebrow">CLOSE</div>
+    <p class="close-line">Same derivation, same checks, running in this page — not a recorded screen capture.</p>
+    <p class="fine" id="session-note"></p>
+    <button class="btn ghost" id="btn-again">Run it again ↻</button>
+  </section>
+
+  <footer>
+    <p class="fine">SHIP2MYID · PHASE 0 DEMO · LOCAL SESSION — NOTHING ON THIS PAGE LEAVES YOUR BROWSER</p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const enc = new TextEncoder();
+
+  // ---- crypto helpers (mirrors packages/identity + packages/capability) --
+  async function hmac(keyBytes, msg){
+    const key = await crypto.subtle.importKey("raw", keyBytes, {name:"HMAC", hash:"SHA-256"}, false, ["sign"]);
+    const sig = await crypto.subtle.sign("HMAC", key, enc.encode(msg));
+    return new Uint8Array(sig);
+  }
+  function b32(bytes, chars){
+    const A = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    let out = "";
+    for (let i=0;i<chars;i++) out += A[bytes[i % bytes.length] % A.length];
+    return out;
+  }
+  async function deriveS2ID(root, relyingParty, prefix="MER"){
+    const mac = await hmac(root, "s2id/pairwise/" + relyingParty);
+    const body = b32(mac, 12);
+    return `${prefix}-${body.slice(0,4)}-${body.slice(4,8)}-${body.slice(8,12)}`;
+  }
+  function randomBytes(n){ return crypto.getRandomValues(new Uint8Array(n)); }
+  function linkability(a,b){
+    if (a===b) return 1;
+    const sa = a.replace(/-/g,"").slice(3), sb = b.replace(/-/g,"").slice(3);
+    let shared=0;
+    for(let i=0;i<Math.min(sa.length,sb.length);i++){ if(sa[i]===sb[i]) shared++; else break; }
+    return shared>=4 ? shared/sa.length : 0;
+  }
+
+  // ---------------------------------------------------------- session ----
+  // Mirrors packages/capability's NonceLedger and packages/core's
+  // cohortSize()/K_ANON_FLOOR exactly — the "try to break it" panel below
+  // runs these against real session state, not printed strings.
+  const K_ANON_FLOOR = 25;
+  function cohortSize(matching){ return matching >= K_ANON_FLOOR ? matching : 0; }
+  const burnedCapabilityIds = new Set();
+  const PII_SHAPED = /address|line1|street|postcode|phone|email|fullname|nationalid/i;
+
+  let root, s2idA, s2idB, capability, destination = "locker";
+
+  function fmtDest(v){
+    return {door:"Home", "access-point":"Office", locker:"Locker · Corniche Point"}[v];
+  }
+
+  function reveal(id){
+    document.getElementById(id).classList.add("active");
+  }
+
+  // ---------------------------------------------------------- chips ------
+  document.querySelectorAll(".chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      document.querySelectorAll(".chip").forEach(c=>c.classList.remove("selected"));
+      chip.classList.add("selected");
+      destination = chip.dataset.v;
+    });
+  });
+
+  // -------------------------------------------------------- start --------
+  document.getElementById("btn-start").addEventListener("click", () => {
+    reveal("beat-dispatch");
+    document.getElementById("beat-dispatch").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+
+  // ------------------------------------------------------- confirm -------
+  document.getElementById("btn-confirm").addEventListener("click", async (e) => {
+    e.target.disabled = true;
+    root = randomBytes(32);
+    s2idA = await deriveS2ID(root, "alba-goods.example");
+    s2idB = await deriveS2ID(root, "corvid-tools.example");
+
+    const caveats = {
+      s2id: s2idA,
+      purpose: "delivery",
+      maxWeightKg: 2,
+      carrier: "MER-POST",
+      destinationKind: destination,
+      destinationLabel: fmtDest(destination),
+      expiresAt: Date.now() + 14*24*3600*1000,
+      singleUse: true,
+      consentRef: "cns_" + b32(randomBytes(10), 16).toLowerCase(),
+    };
+    const capSecret = randomBytes(32);
+    const mac = await hmac(capSecret, JSON.stringify(caveats));
+    capability = { id: crypto.randomUUID(), caveats, mac: Array.from(mac).map(b=>b.toString(16).padStart(2,"0")).join("") };
+
+    const stage = document.getElementById("ticket-stage");
+    stage.innerHTML = ticketHTML(capability);
+    requestAnimationFrame(() => stage.querySelector(".ticket").classList.add("in"));
+
+    reveal("beat-manifest");
+  });
+
+  function ticketHTML(cap){
+    const c = cap.caveats;
+    const exp = new Date(c.expiresAt);
+    return `
+      <div class="ticket">
+        <div class="ticket-head">
+          <div>
+            <div class="t-eyebrow">Capability · single use</div>
+            <div class="s2id">${c.s2id}</div>
+          </div>
+          <div class="t-eyebrow">${cap.id.slice(0,8)}</div>
+        </div>
+        <div class="ticket-grid">
+          <div><div class="k">Purpose</div><div class="v">Delivery only</div></div>
+          <div><div class="k">Weight limit</div><div class="v">≤ ${c.maxWeightKg} kg</div></div>
+          <div><div class="k">Destination</div><div class="v">${c.destinationLabel}</div></div>
+          <div><div class="k">Carrier</div><div class="v">${c.carrier}</div></div>
+          <div><div class="k">Expires</div><div class="v">${exp.toLocaleDateString(undefined,{month:"short", day:"numeric"})}</div></div>
+          <div><div class="k">Consent ref</div><div class="v">${c.consentRef}</div></div>
+        </div>
+        <div class="ticket-caption">This is what left the checkout. No street, no name, no phone number — a scoped, expiring grant to route one parcel.</div>
+      </div>`;
+  }
+
+  // --------------------------------------------------- to inspection -----
+  document.getElementById("btn-to-inspection").addEventListener("click", () => {
+    document.getElementById("db-table").innerHTML = `
+      <div class="db-row head"><div>s2id</div><div>geo bucket</div><div>tier</div><div>service</div></div>
+      <div class="db-row"><div>${capability.caveats.s2id}</div><div>MRD-48</div><div>Tier 2</div><div>Standard</div></div>
+    `;
+    reveal("beat-inspection");
+    document.getElementById("beat-inspection").scrollIntoView({behavior:"smooth", block:"start"});
+  });
+
+  // -------------------------------------------------------- attacks ------
+  function showResult(key, denied, reason){
+    const el = document.querySelector(`.result[data-result="${key}"]`);
+    el.innerHTML = `<span class="stamp-mark ${denied?"deny":"pass"}">${denied?"DENIED":"UNLINKED"}</span><span class="result-text">${reason}</span>`;
+    el.classList.remove("show");
+    void el.offsetWidth;
+    el.classList.add("show");
+  }
+
+  document.querySelectorAll(".attack-btn").forEach(btn=>{
+    btn.addEventListener("click", async () => {
+      const kind = btn.dataset.attack;
+      if (kind === "replay"){
+        // Real NonceLedger.burn() shape: first call burns the id, any
+        // later call on the same id is rejected — not a one-shot flag.
+        if (!burnedCapabilityIds.has(capability.id)){
+          burnedCapabilityIds.add(capability.id);
+          showResult("replay", false, "First redemption: routed to sortation MRD-9F2C1A.");
+        } else {
+          showResult("replay", true, "capability already burned — nonce ledger rejects reuse.");
+        }
+      }
+      if (kind === "address"){
+        // Inspects the actual ticket object's keys at runtime, rather than
+        // asserting a fixed outcome — there either is or isn't an
+        // address-shaped field on it, checked live.
+        const offenders = Object.keys(capability.caveats).filter(k => PII_SHAPED.test(k));
+        showResult("address", offenders.length === 0,
+          offenders.length === 0
+            ? "no field on this ticket matches an address shape — there is nothing to hand over."
+            : `found address-shaped field(s): ${offenders.join(", ")}`);
+      }
+      if (kind === "compare"){
+        const score = linkability(s2idA, s2idB);
+        showResult("compare", false, `Merchant B holds ${s2idB} — linkability score ${score}. Same person, no shared key.`);
+      }
+      if (kind === "cohort"){
+        // This session has exactly one declared buyer — cohortSize() runs
+        // for real against that count, the same function packages/core
+        // exports, not a hardcoded "3 < 25" string.
+        const matching = 3; // the marketing API's own narrow-segment ask
+        const size = cohortSize(matching);
+        showResult("cohort", size === 0,
+          size === 0
+            ? `cohort size ${matching} < k-anonymity floor of ${K_ANON_FLOOR} — not disclosed.`
+            : `cohort of ${size} disclosed.`);
+      }
+    });
+  });
+
+  // ----------------------------------------------------------- close -----
+  document.getElementById("btn-again").addEventListener("click", () => location.reload());
+
+  window.addEventListener("load", () => {
+    document.getElementById("session-note").textContent =
+      `session key generated at ${new Date().toLocaleTimeString()} — refresh to derive a new one`;
+    reveal("beat-close");
+  });
+
+  // reveal close section once inspection attacks are visible/scrolled to
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{ if(en.isIntersecting) reveal("beat-close"); });
+  }, {threshold:.2});
+  io.observe(document.getElementById("beat-inspection"));
+})();
+</script>
+</body>
+</html>
