@@ -301,6 +301,13 @@ client.getStatus(result.capabilityId); <span class="cm">// { status: "issued" | 
 client.registerWebhook({ url: endpointUrl, secret });</div>
     <p class="note">This is the published SDK's actual call shape, not illustrative pseudocode — a hosted API wraps the same contract 1:1.</p>
 
+    <h3 class="sub-title">The drop-in widget, live</h3>
+    <p class="panel-sub">Not a mockup of <code class="mono">&lt;S2IDCheckout/&gt;</code> — the actual custom element, running below with no framework and no build step. One <code class="mono">&lt;script&gt;</code> tag and one HTML tag is the entire integration; try it, then see the identical component restyled on a fictional merchant's own site.</p>
+    <div class="card" style="max-width:380px;">
+      <s2id-checkout merchant-id="alba-goods.example" weight-kg="2" carrier="MER-POST" style="--s2id-accent-override:#D0021B;"></s2id-checkout>
+    </div>
+    <p class="note"><a href="./storefront-demo.html" style="color:inherit;">See this same tag embedded on Alba Goods' own storefront →</a></p>
+
     <h3 class="sub-title">Webhook configuration</h3>
     <div class="card">
       <span class="field-label">Endpoint URL</span>
@@ -378,6 +385,7 @@ client.registerWebhook({ url: endpointUrl, secret });</div>
   </footer>
 </div>
 
+<script src="./widget/ship2myid-checkout.js"></script>
 <script>
 (() => {
   const enc = new TextEncoder();

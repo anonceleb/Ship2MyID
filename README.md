@@ -48,6 +48,8 @@ adapters/
 tools/
   privacy-lint/    CI gate: core purity, zone-3 shape, log hygiene
   demo/            narrated walkthrough
+widget/            [Phase 3] <S2IDCheckout/> — a framework-free custom element,
+                   embedded live in merchant-console.html and storefront-demo.html
 docs/schema.sql    target production data model — Postgres + RLS, not wired to any adapter
 tests/invariants/  the privacy claims, executable
 ```
@@ -195,13 +197,20 @@ Phase 1 remaining: Rust vault, Postgres + RLS, SD-JWT VC issuance, consumer
 Phase 3 (Commerce): the merchant SDK (`packages/sdk` — `MerchantClient`,
 `CheckoutResult`), the verified-human signal (`isVerifiedHuman`), and the
 metered API (`packages/metering`) are done — INV-21/22. Tier-gating was
-already A9. **Not done:** the actual `<S2IDCheckout/>` embeddable UI
-widget — this repo has no bundler or frontend framework yet, and faking
-one in a static demo page would be worse than stating the gap. What "done"
-means here (per SHIP2MYID_DEMO_SPEC.md §12: "a third party integrates from
-the published SDK without talking to us") is met at the SDK layer; the
-drop-in widget is a thin client over the same `MerchantClient` and is
-next.
+already A9. The `<S2IDCheckout/>` embeddable UI widget (`widget/ship2myid-checkout.js`)
+is also done: a real custom element, no bundler and no framework, that
+mirrors `MerchantClient.checkout()`'s exact `CheckoutResult` shape and
+fires it as an `s2id-grant` event. It's live in two places — embedded
+inside `merchant-console.html`'s Integration tab, and again on
+`storefront-demo.html`, a fictional merchant site styled nothing like
+Ship2MyID's own, to prove the same tag drops into a foreign page. With no
+hosted platform to call yet (see Milestone 1 below), the widget's default
+transport re-derives the same client-side crypto the other demo pages use
+and labels itself "demo transport" on-screen rather than silently standing
+in for a real integration; passing an `endpoint` attribute switches it to
+a real `fetch()` POST instead. **Not done:** the hosted API for that
+`endpoint` to actually point at — everything today still runs as a
+self-contained technical proof (see Milestone 1).
 
 Phase 4 (D2C marketing / merchant console): the k-anonymity floor on cohort
 queries (`packages/core`'s `cohortSize()`/`K_ANON_FLOOR`, INV-7) predates this
