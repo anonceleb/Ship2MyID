@@ -9,7 +9,7 @@ tokens, and the executable privacy invariants.
 Node ≥ 22.6 only — TypeScript executes via native type stripping.
 
 ```bash
-npm run verify   # privacy-lint + all invariants (INV-1..26, A4, non-widening)
+npm run verify   # privacy-lint + all invariants (INV-1..28, A4, non-widening)
 npm run demo     # narrated end-to-end ship flow
 ```
 
@@ -33,7 +33,9 @@ packages/
   policy/      [A9] signed, versioned, hot-reloadable disclosure policy
   network/     [A10] Beckn-shaped async request/callback pairs (action/on_action)
   metering/    [Phase 3] per-participant metered API quota
-  sdk/         [Phase 3] the published merchant-facing surface — MerchantClient, CheckoutResult
+  webhooks/    [Phase 4] real signed HTTP delivery — HMAC-SHA256, fetch(), bounded retry
+  sdk/         [Phase 3/4] the published merchant-facing surface — MerchantClient,
+               CheckoutResult, getStatus(), registerWebhook()
   core/        domain, consent ledger, ports — imports NOTHING from adapters or services
 services/
   vault/       ZONE 1 — the only decryption path. Audit is a precondition of plaintext
@@ -72,6 +74,8 @@ tests/invariants/  the privacy claims, executable
 | INV-16 | Revocation kills a capability the merchant believes is still valid |
 | INV-17 | A redirect issues a fresh capability without telling the merchant the destination changed |
 | INV-18 | Refund-without-return makes zero vault calls |
+| INV-27 | A merchant's capability-status read is ownership-checked and exactly three states — issued, revoked, expired — never a delivery-progress feed |
+| INV-28 | Webhook delivery is genuinely signed (HMAC-SHA256) and independently verifiable, with real bounded retry on failure |
 
 Both CI gates are proven non-vacuous: injecting `address: string` into `MerchantView`
 makes privacy-lint exit 1, and each invariant asserts the failure mode as well as the
@@ -124,6 +128,46 @@ shipment that created it:
 other direction: through the real `Platform` API, and directly against the attenuation
 primitives underneath it.
 
+**Phase 4 — Merchant status reads + webhook delivery — done.** The merchant console
+(`merchant-console.html`) originally shipped with a "Shipments in flight" screen that
+had nothing real to show for status, and a webhook config form that didn't deliver
+anything. Rather than fake either, both are now real, narrowly-scoped backend
+capabilities:
+
+- `Platform.getCapabilityStatus(capabilityId, participantId)` — a merchant *pulling*
+  the status of a capability it already holds, ownership-checked the same way
+  `revoke()`/`createReturn()`/`redirectDelivery()` already are (against
+  `consent.grantedTo`, not `subjectRef` — this is the merchant's read, not a
+  consumer-authorized action). Deliberately exactly three states: `issued`, `revoked`,
+  `expired`. Not "out for delivery": `Platform` shares a `ConsentLedger` with `Vault`
+  but not a nonce store (see the docstring on `Platform`'s `#nonces`), so it has no way
+  to know whether `Vault` has actually redeemed a capability, and reporting anything
+  richer would be inventing a tracking feed this architecture doesn't wire up, on
+  purpose. `ConsentLedger.isRevoked()` is the one new primitive underneath it — a pure
+  getter on state that already existed.
+- `packages/webhooks` — real delivery, not a simulated log: HMAC-SHA256 over the same
+  canonical JSON `packages/registry` signs request envelopes with, an actual `fetch()`
+  POST, and bounded retry (3 attempts) with every attempt recorded, success or
+  failure. `Platform.registerWebhook()` / `Platform.processBatch()` fire it as the
+  hosted-HTTP twin of the existing in-process `onShipmentReady`/`onShipmentError`
+  callback pair — same two events, `checkout.completed` / `checkout.failed`, same
+  settlement point, no separate poller bolted on afterward.
+- Both are exposed on `MerchantClient` (`getStatus()`, `registerWebhook()`) scoped to
+  that client's own `participantId` by construction — there is no parameter that could
+  make one merchant ask about another's order.
+
+`tests/invariants/status-and-webhooks.test.ts` (INV-27/28) proves ownership is
+enforced, the three-state ceiling holds even after tampering a consent entry's expiry
+via the same `tamperForDemo()` seam INV-10 uses, and — real delivery, not a mock —
+spins up a local `node:http` server to prove a signature that verifies, a delivery
+that retries on failure and eventually succeeds, and one that exhausts its retries
+against a dead endpoint and throws.
+
+`merchant-console.html`'s Integration tab performs this for real in the browser too:
+registering a webhook does a genuine, HMAC-signed `fetch()` POST to whatever URL is
+entered. Most cross-origin targets will fail there on CORS — that's the browser
+behaving correctly, not the page faking success.
+
 ## Known Phase 0 shortcuts
 
 Stated plainly so they don't get mistaken for design:
@@ -158,6 +202,16 @@ means here (per SHIP2MYID_DEMO_SPEC.md §12: "a third party integrates from
 the published SDK without talking to us") is met at the SDK layer; the
 drop-in widget is a thin client over the same `MerchantClient` and is
 next.
+
+Phase 4 (D2C marketing / merchant console): the k-anonymity floor on cohort
+queries (`packages/core`'s `cohortSize()`/`K_ANON_FLOOR`, INV-7) predates this
+phase and is the one piece of spec §6.4 actually implemented — consumer-declared
+intent, brand bidding, and offer delivery are not, and `merchant-console.html`
+says so rather than faking a brand-bidding UI. Merchant-facing capability status
+reads and real webhook delivery (`packages/webhooks`) are done — INV-27/28. **Not
+done:** any richer post-mint tracking feed (see the Phase 4 section above for why
+that's a boundary, not an oversight), and a hosted webhook-delivery admin surface —
+`packages/webhooks`' `WebhookDispatcher` is the primitive a real one would sit on.
 
 ## Privacy-invariant-reviewer remediation (INV-23..26)
 

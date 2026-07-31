@@ -18,11 +18,13 @@ import {
   Platform,
   TierTooLow,
   type ShipmentRequest,
+  type CapabilityStatus,
 } from "../../../services/platform/src/platform.ts";
 import { QuotaExceeded } from "../../metering/src/meter.ts";
+import type { WebhookConfig } from "../../webhooks/src/webhook.ts";
 
 export { TierTooLow, QuotaExceeded };
-export type { ShipmentRequest };
+export type { ShipmentRequest, CapabilityStatus, WebhookConfig };
 
 /**
  * What a merchant integration actually receives — deliberately not the
@@ -100,5 +102,22 @@ export class MerchantClient {
   /** Subscribes to the on_checkout nack — fires if settlement rejects the request (quota, tier, expired envelope), independently of any other merchant's pending transaction. */
   onCheckoutError(transactionId: string, handler: (error: unknown) => void): void {
     this.#platform.onShipmentError(transactionId, handler);
+  }
+
+  /**
+   * [Phase 4] A pull, not a push: this merchant asking about a capability it
+   * already holds. Scoped to this client's own participantId by
+   * construction — there is no parameter that could make it ask about
+   * another merchant's order. See CapabilityStatus's docstring in
+   * services/platform for why this is exactly three states and never a
+   * delivery-progress feed.
+   */
+  getStatus(capabilityId: string): { status: CapabilityStatus } {
+    return { status: this.#platform.getCapabilityStatus(capabilityId, this.#participantId) };
+  }
+
+  /** [Phase 4] Registers this merchant's webhook endpoint — the hosted-HTTP twin of onCheckoutReady()/onCheckoutError(). See packages/webhooks. */
+  registerWebhook(config: WebhookConfig): void {
+    this.#platform.registerWebhook(this.#participantId, config);
   }
 }

@@ -63,6 +63,11 @@ export class ConsentLedger {
     this.#revoked.add(ref);
   }
 
+  /** Read-only: has this ref been revoked? A merchant status read needs this without the purpose/participant/expiry bundling isValidFor() does. */
+  isRevoked(ref: string): boolean {
+    return this.#revoked.has(ref);
+  }
+
   isValidFor(ref: string, purpose: string, participantId: string, now = Date.now()): boolean {
     const e = this.find(ref);
     return (

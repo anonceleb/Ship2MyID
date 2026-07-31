@@ -50,6 +50,7 @@ for (const f of walk(join(ROOT, "packages/core"))) {
 const ZONE3_TYPES: Array<{ file: string; type: string }> = [
   { file: "packages/core/src/core.ts", type: "MerchantView" },
   { file: "packages/sdk/src/client.ts", type: "CheckoutResult" },
+  { file: "packages/webhooks/src/webhook.ts", type: "CheckoutCompletedPayload" },
 ];
 for (const { file, type } of ZONE3_TYPES) {
   const src = readFileSync(join(ROOT, file), "utf8");

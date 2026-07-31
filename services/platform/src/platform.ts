@@ -20,10 +20,29 @@ import { deriveS2ID, type RootSecret } from "../../../packages/identity/src/pair
 import { PolicyStore, signPolicy } from "../../../packages/policy/src/policy.ts";
 import { AsyncExchange } from "../../../packages/network/src/exchange.ts";
 import { UsageMeter } from "../../../packages/metering/src/meter.ts";
+import {
+  WebhookDispatcher,
+  type WebhookConfig,
+  type WebhookEvent,
+  type DeliveryAttempt,
+} from "../../../packages/webhooks/src/webhook.ts";
 
 export class TierTooLow extends Error {}
 export class UnknownCapability extends Error {}
 export class NotAuthorized extends Error {}
+
+/**
+ * A merchant polling the status of a capability it already holds — a pull,
+ * never a push, so it doesn't touch the "merchant identifier must never
+ * appear as a notify() target" rule NotificationPort enforces. Deliberately
+ * three states, no more: "issued" does not mean "in transit" or "out for
+ * delivery". Platform shares a ConsentLedger with Vault but not a nonce
+ * store (see the docstring on #nonces below) — it genuinely has no way to
+ * know whether Vault has redeemed this capability. Reporting anything
+ * richer than these three states would be inventing a tracking feed this
+ * architecture doesn't wire up, on purpose.
+ */
+export type CapabilityStatus = "issued" | "revoked" | "expired";
 
 export type ShipmentRequest = {
   s2id: string;
@@ -84,6 +103,9 @@ export class Platform {
   #pendingShipments = new Map<string, { env: SignedEnvelope; req: ShipmentRequest; subjectRef: string }>();
   /** [Phase 3] Metered API. See packages/metering/src/meter.ts. */
   #meter: UsageMeter;
+  /** [Phase 4] participantId -> registered webhook endpoint. See packages/webhooks/src/webhook.ts. */
+  #webhooks = new Map<string, WebhookConfig>();
+  #webhookDispatcher: WebhookDispatcher;
 
   constructor(opts: {
     registry: Registry;
@@ -92,6 +114,7 @@ export class Platform {
     nonces?: NonceLedger;
     policy?: PolicyStore;
     meter?: UsageMeter;
+    webhookDispatcher?: WebhookDispatcher;
   }) {
     this.#registry = opts.registry;
     this.#consent = opts.consent;
@@ -99,11 +122,61 @@ export class Platform {
     this.#nonces = opts.nonces ?? new NonceLedger();
     this.#policy = opts.policy ?? defaultPolicyStore();
     this.#meter = opts.meter ?? defaultUsageMeter();
+    this.#webhookDispatcher = opts.webhookDispatcher ?? new WebhookDispatcher();
   }
 
   /** [A9] The signed policy artifact currently gating createShipment. */
   policy(): PolicyStore {
     return this.#policy;
+  }
+
+  /**
+   * [Phase 4] See the CapabilityStatus docstring above for why this is
+   * exactly three states. Ownership-checked the same way revoke() /
+   * createReturn() / redirectDelivery() already are — here against the
+   * *merchant's* participantId (consent.grantedTo), not the consumer's
+   * subjectRef, since this is a merchant reading its own order rather than
+   * a consumer-authorized action. Without this check, one merchant could
+   * poll another's capability status by guessing an id.
+   */
+  getCapabilityStatus(capabilityId: string, participantId: string): CapabilityStatus {
+    const consentRef = this.#capabilityConsent.get(capabilityId);
+    if (!consentRef) throw new UnknownCapability(capabilityId);
+    const entry = this.#consent.find(consentRef);
+    if (!entry || entry.grantedTo !== participantId) {
+      throw new NotAuthorized(`capability ${capabilityId} does not belong to participant ${participantId}`);
+    }
+    if (this.#consent.isRevoked(consentRef)) return "revoked";
+    if (Date.now() > entry.expiresAt) return "expired";
+    return "issued";
+  }
+
+  /**
+   * [Phase 4] Registers (or replaces) the merchant's webhook endpoint.
+   * `secret` round-trips back to the merchant via out-of-band registration
+   * (the same way an API key would) — Platform never generates it on the
+   * merchant's behalf, so there's exactly one place the shared secret ever
+   * exists in plaintext outside this map: wherever the merchant typed it in.
+   */
+  registerWebhook(participantId: string, config: WebhookConfig): void {
+    this.#webhooks.set(participantId, config);
+  }
+
+  /** [Phase 4] Every delivery attempt made so far, success or failure — see packages/webhooks. */
+  webhookHistory(): readonly DeliveryAttempt[] {
+    return this.#webhookDispatcher.history();
+  }
+
+  /**
+   * Fire-and-forget from processBatch()'s point of view: a webhook target
+   * being down must not make settlement itself fail, and processBatch()
+   * stays synchronous for every existing caller. Delivery failures land on
+   * webhookHistory(), not as a thrown error here.
+   */
+  #fireWebhook(participantId: string, event: WebhookEvent): void {
+    const config = this.#webhooks.get(participantId);
+    if (!config) return;
+    void this.#webhookDispatcher.deliver(config, event).catch(() => {});
   }
 
   learnProjection(s2id: string, p: { geoBucket: string; vouchTier: 1 | 2 | 3 }): void {
@@ -228,15 +301,32 @@ export class Platform {
    * (quota, tier, an envelope that expired while queued) reports through
    * onShipmentError() for that transaction alone — it does not throw out of
    * the loop and does not touch any other merchant's pending transaction.
+   *
+   * [Phase 4] Also fires the merchant's registered webhook, if any, on the
+   * same settlement — the hosted-HTTP twin of onShipmentReady()/
+   * onShipmentError(), not a separate poller bolted on afterward.
    */
   processBatch(): void {
     for (const [transactionId, pending] of [...this.#pendingShipments]) {
       this.#pendingShipments.delete(transactionId);
+      const participantId = pending.env.participantId;
       try {
         const result = this.createShipment(pending.env, pending.req, pending.subjectRef);
         this.#shipments.callback(transactionId, result);
+        this.#fireWebhook(participantId, {
+          event: "checkout.completed",
+          transactionId,
+          at: Date.now(),
+          data: { capabilityId: result.capability.id, s2id: result.merchantView.s2id },
+        });
       } catch (err) {
         this.#shipments.fail(transactionId, err);
+        this.#fireWebhook(participantId, {
+          event: "checkout.failed",
+          transactionId,
+          at: Date.now(),
+          data: { reason: (err as Error).message },
+        });
       }
     }
   }
