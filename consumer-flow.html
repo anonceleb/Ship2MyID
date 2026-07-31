@@ -333,7 +333,7 @@
     <p class="beat-sub" style="margin:26px 0 14px;">Now put it in front of the vault anyway — the way a courier's scanner would.</p>
     <button class="attack-btn" id="btn-redeem-revoked" disabled>Attempt to redeem it</button>
     <div class="result" data-result="revoke-redeem" style="margin-top:14px;"></div>
-    <p class="ticket-caption" id="revoke-explainer" style="display:none;">Same class, same label as the replay you ran in step 03 — <code>CapabilityBurned</code>, not a different error. A merchant catching by error type cannot tell "already used" apart from "consumer changed their mind." That's deliberate — see <code>services/vault/src/vault.ts</code>.</p>
+    <p class="ticket-caption" id="revoke-explainer" style="display:none;">Rejected the exact same way as the replay attempt back in step 03 — same message, no way to tell them apart. That's deliberate: nobody, not even the merchant, can distinguish "this was already used" from "the customer changed their mind."</p>
   </section>
 
   <!-- ======================================================= CLOSE ==== -->
