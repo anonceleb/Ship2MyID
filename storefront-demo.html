@@ -3,89 +3,298 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Alba Goods — Field Notebook No. 4</title>
+<title>Ship2MyID — demo storefront</title>
+<link rel="icon" href="./assets/logo-small.png">
 <style>
   :root{
-    --bg:#FBF8F3; --panel:#ffffff; --ink:#2B2620; --ink-soft:#6B6255; --border:#E7DFD1; --accent:#8A5A2B;
+    --bg:#ffffff; --bg-raised:#F6F4EF; --ink:#161616; --ink-soft:rgba(22,22,22,.66);
+    --ink-faint:rgba(22,22,22,.46); --red:#D0021B; --red-dark:#A5010F;
+    --divider:rgba(22,22,22,.14); --divider-strong:rgba(22,22,22,.28); --ok:#1F6F43; --radius:0px;
   }
   *{box-sizing:border-box;}
-  body{margin:0; background:var(--bg); color:var(--ink); font-family:Georgia,'Times New Roman',serif; -webkit-font-smoothing:antialiased;}
-  header{background:var(--panel); border-bottom:1px solid var(--border); padding:18px 24px; display:flex; justify-content:space-between; align-items:center;}
-  header .logo{font-family:'Trebuchet MS',sans-serif; font-weight:700; font-size:19px; letter-spacing:.02em;}
-  header nav a{font-family:'Trebuchet MS',sans-serif; font-size:12.5px; color:var(--ink-soft); text-decoration:none; margin-left:18px;}
-  header nav a:hover{color:var(--ink);}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing:antialiased;}
+  code, .mono{font-family:ui-monospace, Menlo, Consolas, monospace;}
+  [hidden]{display:none !important;}
 
-  .banner{
-    max-width:900px; margin:18px auto 0; padding:12px 18px; background:#FFF6E3; border:1px solid #E9D6A0;
-    font-family:'Trebuchet MS',sans-serif; font-size:12.5px; color:#6B5416; line-height:1.6;
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:22px clamp(20px,5vw,72px); border-bottom:1px solid var(--divider);}
+  .topbar img{height:32px; width:auto; display:block;}
+  .cart-btn{
+    font-size:12px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink);
+    background:none; border:1px solid var(--divider-strong); border-radius:var(--radius);
+    padding:9px 16px; cursor:pointer; display:flex; align-items:center; gap:8px;
   }
+  .cart-btn:hover{border-color:var(--ink);}
+  .cart-btn:disabled{opacity:.4; cursor:default;}
+  .cart-btn .dot{background:var(--red); color:#fff; font-size:10.5px; font-weight:700; border-radius:50%; width:17px; height:17px; display:flex; align-items:center; justify-content:center;}
 
-  .wrap{max-width:900px; margin:0 auto; padding:28px 24px 80px; display:grid; grid-template-columns:1.1fr .9fr; gap:40px;}
-  @media(max-width:760px){.wrap{grid-template-columns:1fr;}}
+  .topnav{max-width:920px; margin:0 auto; padding:20px 24px 0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  .topnav a{font-size:12px; letter-spacing:.04em; text-transform:uppercase; font-weight:600; color:var(--ink-soft); text-decoration:none;}
+  .topnav a:hover{color:var(--ink);}
+  .topnav .group{display:flex; gap:22px;}
 
-  .shot{aspect-ratio:1; background:var(--panel); border:1px solid var(--border); border-radius:6px; display:flex; align-items:center; justify-content:center;}
+  .wrap{max-width:920px; margin:0 auto; padding:0 24px 140px;}
 
-  h1{font-size:28px; margin:0 0 6px;}
-  .price{font-family:'Trebuchet MS',sans-serif; font-size:20px; font-weight:700; margin:0 0 18px;}
-  p.desc{font-size:15px; line-height:1.7; color:var(--ink-soft); margin:0 0 26px;}
+  header.hero{padding:56px 0 40px;}
+  .eyebrow{
+    font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700;
+    color:var(--red); display:inline-flex; align-items:center; gap:8px; margin-bottom:20px;
+    border:1px solid var(--red); padding:6px 12px;
+  }
+  h1.headline{font-weight:700; font-size:clamp(28px, 4.6vw, 40px); line-height:1.2; letter-spacing:0; margin:0 0 14px; max-width:24ch;}
+  p.lede{font-size:16px; line-height:1.6; color:var(--ink-soft); max-width:58ch; margin:0 0 8px;}
 
-  .panel{background:var(--panel); border:1px solid var(--border); border-radius:8px; padding:22px; font-family:'Trebuchet MS',sans-serif;}
-  .panel h2{font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:0 0 16px;}
+  .callout{
+    border:1px dashed var(--divider-strong); padding:16px 18px; margin:26px 0 8px;
+    font-size:13px; line-height:1.6; color:var(--ink-soft);
+  }
+  .callout code{color:var(--ink);}
 
-  .confirm{display:none; margin-top:16px; background:#EFF6EF; border:1px solid #BFDDBF; border-radius:8px; padding:16px; font-family:'Trebuchet MS',sans-serif; font-size:13px; line-height:1.7;}
-  .confirm.show{display:block;}
-  .confirm b{display:block; font-size:14px; margin-bottom:4px;}
+  .btn{
+    font-size:14.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    background:var(--red); color:#fff; border:none; padding:13px 22px; border-radius:var(--radius);
+    cursor:pointer; display:inline-flex; align-items:center; gap:10px; transition:background .15s ease;
+  }
+  .btn:hover{background:var(--red-dark);}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--ink);}
+  .btn.ghost:hover{background:var(--bg-raised);}
 
-  footer{font-family:'Trebuchet MS',sans-serif; font-size:11px; color:var(--ink-soft); text-align:center; padding:20px;}
+  .back-link{font-size:12.5px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; color:var(--ink-soft); text-decoration:none; display:inline-block; margin:32px 0 8px;}
+  .back-link:hover{color:var(--ink);}
+
+  h2.section-title{font-weight:800; text-transform:uppercase; font-size:24px; margin:36px 0 6px;}
+  h3.sub-title{font-weight:800; text-transform:uppercase; font-size:16px; margin:0 0 16px;}
+
+  /* -------------------------------------------------------------- shop -- */
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:12px;}
+  @media(max-width:640px){.grid{grid-template-columns:1fr;}}
+  .p-card{background:var(--bg-raised); border:1px solid var(--divider); padding:24px; display:flex; flex-direction:column;}
+  .shot{aspect-ratio:1.5; background:var(--bg); border:1px solid var(--divider); display:flex; align-items:center; justify-content:center; margin-bottom:18px;}
+  .p-name{font-weight:800; text-transform:uppercase; font-size:16px; margin:0 0 4px;}
+  .p-meta{font-size:11px; letter-spacing:.03em; color:var(--ink-faint); margin-bottom:12px;}
+  .p-price{font-weight:800; font-size:16px; margin-bottom:18px;}
+  .add-btn{
+    margin-top:auto; font-size:12.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    background:var(--ink); color:#fff; border:none; padding:11px 14px; cursor:pointer;
+  }
+  .add-btn:hover{background:var(--red);}
+  .add-btn.in-cart{background:transparent; color:var(--ok); border:1px solid var(--ok);}
+
+  /* ---------------------------------------------------------- checkout -- */
+  .cols{display:grid; grid-template-columns:1.1fr .9fr; gap:24px; align-items:start; margin-top:12px;}
+  @media(max-width:760px){.cols{grid-template-columns:1fr;}}
+  .card{background:var(--bg-raised); border:1px solid var(--divider); padding:24px;}
+  .cart-line{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--divider); font-size:13.5px;}
+  .cart-line:last-of-type{border-bottom:none;}
+  .cart-line .name{font-weight:700;}
+  .cart-line .meta{font-size:11px; color:var(--ink-faint); margin-top:2px;}
+  .qty{display:flex; align-items:center; gap:8px;}
+  .qty button{width:24px; height:24px; border:1px solid var(--divider-strong); background:var(--bg); cursor:pointer; font-size:14px; line-height:1;}
+  .qty button:hover{border-color:var(--ink);}
+  .subtotal{display:flex; justify-content:space-between; padding-top:14px; margin-top:4px; border-top:1px solid var(--ink); font-weight:800; font-size:14.5px;}
+  .empty-note{font-size:13px; color:var(--ink-soft);}
+
+  /* ------------------------------------------------------------ confirm -- */
+  .ticket{background:var(--bg-raised); border:1px solid var(--divider); padding:24px; margin-top:12px;}
+  .ticket .t-eyebrow{font-size:11px; letter-spacing:.06em; color:var(--ok); text-transform:uppercase; font-weight:700; margin-bottom:14px;}
+  .order-line{display:flex; justify-content:space-between; font-size:13px; padding:5px 0;}
+  .order-line.total{border-top:1px solid var(--divider-strong); margin-top:8px; padding-top:10px; font-weight:800;}
+  .ticket-caption{font-size:13px; color:var(--ink-soft); margin-top:16px; padding-top:16px; border-top:1px dashed var(--divider);}
+
+  footer{padding:60px 0 20px;}
+  .fine{font-size:11.5px; letter-spacing:.04em; color:var(--ink-faint);}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">Alba Goods</div>
-  <nav>
-    <a href="./index.html">Ship2MyID demo home</a>
-    <a href="./merchant-console.html">Merchant console →</a>
-  </nav>
-</header>
-
-<div class="banner">
-  This page is a fictional merchant's storefront, styled deliberately unlike Ship2MyID's own site — serif type, a brown accent, nothing borrowed. The checkout panel on the right is one real <code>&lt;s2id-checkout&gt;</code> tag, dropped in with a single <code>&lt;script&gt;</code> include. Nothing about its logic or styling comes from this page.
+<div class="topbar">
+  <img src="./assets/logo-large.png" alt="Ship2MyID">
+  <button class="cart-btn" id="btn-cart" disabled>
+    <span>Cart</span><span class="dot" id="cart-count">0</span>
+  </button>
+</div>
+<div class="topnav">
+  <a href="./index.html">← Choose a different flow</a>
+  <div class="group">
+    <a href="./merchant-console.html">See the merchant console →</a>
+    <a href="#" id="logo-home">Reset the demo ↻</a>
+  </div>
 </div>
 
 <div class="wrap">
-  <div>
-    <div class="shot">
-      <svg width="120" height="120" viewBox="0 0 40 40" fill="none"><rect x="8" y="4" width="24" height="32" rx="1.5" stroke="#8A5A2B" stroke-width="1.4"/><path d="M13 12h14M13 18h14M13 24h9" stroke="#8A5A2B" stroke-width="1.2"/></svg>
-    </div>
-  </div>
-  <div>
-    <h1>Field Notebook — No. 4</h1>
-    <p class="price">$14.00</p>
-    <p class="desc">Stitched cotton cover, 240gsm dot-grid paper, 96 pages. The one we always keep at the register.</p>
 
-    <div class="panel">
-      <h2>Checkout</h2>
-      <s2id-checkout merchant-id="alba-goods.example" weight-kg="0.24" carrier="MER-POST"></s2id-checkout>
-      <div class="confirm" id="confirm"></div>
+  <!-- ==================================================== SHOP VIEW ==== -->
+  <section id="view-shop">
+    <header class="hero">
+      <div class="eyebrow">Demo storefront — Alba Goods</div>
+      <h1 class="headline">Everything here ships without ever collecting your address.</h1>
+      <p class="lede">A fictional merchant's catalog, running the real checkout component below — the same one embedded in the merchant console's Integration tab.</p>
+      <div class="callout">The checkout panel further down is one live <code>&lt;s2id-checkout&gt;</code> tag, dropped into this page with a single <code>&lt;script&gt;</code> include. Nothing about its logic is reimplemented here — see <a href="./merchant-console.html">the merchant console</a> for the same tag, restyled again.</div>
+    </header>
+
+    <h2 class="section-title">New in</h2>
+    <div class="grid" id="product-grid"></div>
+  </section>
+
+  <!-- ================================================ CHECKOUT VIEW ==== -->
+  <section id="view-checkout" hidden>
+    <a href="#" class="back-link" id="link-continue">← Continue shopping</a>
+    <div class="cols">
+      <div class="card">
+        <h3 class="sub-title">Your order</h3>
+        <div id="checkout-cart"></div>
+        <div class="subtotal"><span>Subtotal</span><span id="checkout-subtotal"></span></div>
+      </div>
+      <div class="card">
+        <h3 class="sub-title">Checkout</h3>
+        <s2id-checkout merchant-id="alba-goods.example" weight-kg="1" carrier="MER-POST" style="--s2id-accent-override:#D0021B;"></s2id-checkout>
+      </div>
     </div>
-  </div>
+  </section>
+
+  <!-- =============================================== CONFIRMED VIEW ==== -->
+  <section id="view-confirmed" hidden>
+    <a href="#" class="back-link" id="link-shop-again-top">← Back to shop</a>
+    <div class="ticket" style="max-width:460px;">
+      <div class="t-eyebrow">Order confirmed — no address on file</div>
+      <div id="confirm-body"></div>
+    </div>
+    <button class="btn" id="btn-shop-again" style="margin-top:20px;">Shop again</button>
+  </section>
+
+  <footer>
+    <p class="fine">SHIP2MYID · DEMO STOREFRONT — THE CHECKOUT PANEL IS A REAL &lt;S2ID-CHECKOUT&gt; EMBED, NOT A MOCKUP</p>
+  </footer>
 </div>
-
-<footer>ALBA GOODS · DEMO STOREFRONT — THE CHECKOUT PANEL ABOVE IS A REAL &lt;S2ID-CHECKOUT&gt; EMBED, NOT A MOCKUP</footer>
 
 <script src="./widget/ship2myid-checkout.js"></script>
 <script>
+(() => {
+  const ICONS = {
+    notebook: `<rect x="8" y="4" width="24" height="32" rx="1.5" stroke="#161616" stroke-width="1.6"/><path d="M13 12h14M13 18h14M13 24h9" stroke="#161616" stroke-width="1.4"/>`,
+    tote: `<path d="M9 14h22l-2 20H11L9 14z" stroke="#161616" stroke-width="1.6" stroke-linejoin="round"/><path d="M14 14v-3a6 6 0 0112 0v3" stroke="#161616" stroke-width="1.6"/>`,
+    mug: `<path d="M10 12h16v14a4 4 0 01-4 4h-8a4 4 0 01-4-4V12z" stroke="#161616" stroke-width="1.6" stroke-linejoin="round"/><path d="M26 16h3a3 3 0 010 6h-3" stroke="#161616" stroke-width="1.6"/>`,
+    throw: `<rect x="6" y="10" width="28" height="20" rx="2" stroke="#161616" stroke-width="1.6"/><path d="M6 16.5h28M6 23.5h28" stroke="#161616" stroke-width="1.2"/>`,
+  };
+
+  const PRODUCTS = [
+    { id: "notebook", name: "Field Notebook — No. 4", price: 14.00, weightKg: 0.24, sku: "FN-004", meta: "240gsm dot-grid · 96 pages", icon: "notebook" },
+    { id: "tote", name: "Waxed Canvas Tote", price: 38.00, weightKg: 0.6, sku: "WCT-011", meta: "14oz waxed canvas · natural", icon: "tote" },
+    { id: "pourover", name: "Ceramic Pour-Over Kit", price: 52.00, weightKg: 1.1, sku: "CPK-002", meta: "Dripper, filter ring, 350ml carafe", icon: "mug" },
+    { id: "throw", name: "Wool Throw — Ash", price: 86.00, weightKg: 1.8, sku: "WT-ASH", meta: "100% merino · 130×180cm", icon: "throw" },
+  ];
+
+  const fmt = (n) => `$${n.toFixed(2)}`;
+  let cart = {}; // productId -> qty
+
+  const cartEntries = () => Object.entries(cart).filter(([, qty]) => qty > 0);
+  const cartCount = () => cartEntries().reduce((sum, [, qty]) => sum + qty, 0);
+  const cartWeight = () => cartEntries().reduce((sum, [id, qty]) => sum + PRODUCTS.find(p => p.id === id).weightKg * qty, 0);
+  const cartTotal = () => cartEntries().reduce((sum, [id, qty]) => sum + PRODUCTS.find(p => p.id === id).price * qty, 0);
+
+  function switchView(name) {
+    document.getElementById("view-shop").hidden = name !== "shop";
+    document.getElementById("view-checkout").hidden = name !== "checkout";
+    document.getElementById("view-confirmed").hidden = name !== "confirmed";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function renderHeader() {
+    const count = cartCount();
+    document.getElementById("cart-count").textContent = count;
+    document.getElementById("btn-cart").disabled = count === 0;
+  }
+
+  function renderShop() {
+    document.getElementById("product-grid").innerHTML = PRODUCTS.map((p) => `
+      <div class="p-card">
+        <div class="shot"><svg width="56" height="56" viewBox="0 0 40 40" fill="none">${ICONS[p.icon]}</svg></div>
+        <div class="p-name">${p.name}</div>
+        <div class="p-meta">SKU ${p.sku} · ${p.meta}</div>
+        <div class="p-price">${fmt(p.price)}</div>
+        <button class="add-btn ${cart[p.id] ? "in-cart" : ""}" data-add="${p.id}">
+          ${cart[p.id] ? `In cart · ${cart[p.id]}` : "Add to cart"}
+        </button>
+      </div>
+    `).join("");
+    document.querySelectorAll("[data-add]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const id = btn.dataset.add;
+        cart[id] = (cart[id] || 0) + 1;
+        renderShop();
+        renderHeader();
+      });
+    });
+  }
+
+  function renderCheckoutCart() {
+    document.getElementById("checkout-cart").innerHTML = cartEntries().map(([id, qty]) => {
+      const p = PRODUCTS.find(x => x.id === id);
+      return `
+        <div class="cart-line">
+          <div>
+            <div class="name">${p.name}</div>
+            <div class="meta">${fmt(p.price)} each</div>
+          </div>
+          <div class="qty">
+            <button data-dec="${id}">−</button>
+            <span>${qty}</span>
+            <button data-inc="${id}">+</button>
+          </div>
+        </div>
+      `;
+    }).join("") || `<p class="empty-note">Your cart is empty.</p>`;
+    document.getElementById("checkout-subtotal").textContent = fmt(cartTotal());
+
+    document.querySelectorAll("[data-inc]").forEach((btn) => btn.addEventListener("click", () => {
+      cart[btn.dataset.inc] += 1;
+      renderCheckoutCart(); renderHeader(); syncWidgetWeight();
+    }));
+    document.querySelectorAll("[data-dec]").forEach((btn) => btn.addEventListener("click", () => {
+      const id = btn.dataset.dec;
+      cart[id] -= 1;
+      if (cart[id] <= 0) delete cart[id];
+      renderCheckoutCart(); renderHeader(); syncWidgetWeight();
+      if (cartCount() === 0) switchView("shop");
+    }));
+  }
+
+  function syncWidgetWeight() {
+    document.querySelector("s2id-checkout").setAttribute("weight-kg", Math.max(cartWeight(), 0.1).toFixed(2));
+  }
+
+  document.getElementById("btn-cart").addEventListener("click", () => {
+    if (cartCount() === 0) return;
+    renderCheckoutCart();
+    syncWidgetWeight();
+    switchView("checkout");
+  });
+  document.getElementById("link-continue").addEventListener("click", (e) => { e.preventDefault(); switchView("shop"); });
+  document.getElementById("logo-home").addEventListener("click", (e) => { e.preventDefault(); location.reload(); });
+
   document.querySelector("s2id-checkout").addEventListener("s2id-grant", (e) => {
     const r = e.detail;
-    const el = document.getElementById("confirm");
-    el.innerHTML = `
-      <b>Order confirmed — no address on file</b>
-      Alba Goods received <code>${r.s2id}</code>, a ${r.serviceLevel.toLowerCase()} routing via MER-POST, and an ETA of ${r.estimatedDelivery}.
-      That's the entire record this storefront's own database now holds for this sale.
+    const items = cartEntries().map(([id, qty]) => {
+      const p = PRODUCTS.find(x => x.id === id);
+      return `<div class="order-line"><span>${qty} × ${p.name}</span><span>${fmt(p.price * qty)}</span></div>`;
+    }).join("");
+    const total = cartTotal();
+
+    document.getElementById("confirm-body").innerHTML = `
+      ${items}
+      <div class="order-line total"><span>Total</span><span>${fmt(total)}</span></div>
+      <p class="ticket-caption">Routed as <code class="mono">${r.s2id}</code> — ${r.serviceLevel.toLowerCase()} service via MER-POST, ETA ${r.estimatedDelivery}. That's the entire record this storefront's own database now holds for this sale.</p>
     `;
-    el.classList.add("show");
+    cart = {};
+    renderHeader();
+    switchView("confirmed");
   });
+
+  document.getElementById("btn-shop-again").addEventListener("click", () => switchView("shop"));
+  document.getElementById("link-shop-again-top").addEventListener("click", (e) => { e.preventDefault(); switchView("shop"); });
+
+  renderShop();
+  renderHeader();
+})();
 </script>
 
 </body>
