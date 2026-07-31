@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ship2MyID — merchant console</title>
+<link rel="icon" href="./assets/logo-small.png">
+<style>
+  :root{
+    --bg:#ffffff; --bg-raised:#F6F4EF; --ink:#161616; --ink-soft:rgba(22,22,22,.66);
+    --ink-faint:rgba(22,22,22,.46); --red:#D0021B; --red-dark:#A5010F;
+    --divider:rgba(22,22,22,.14); --divider-strong:rgba(22,22,22,.28); --ok:#1F6F43; --radius:0px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing:antialiased;}
+  code, .mono{font-family:ui-monospace, Menlo, Consolas, monospace;}
+  ::selection{background:var(--red); color:#fff;}
+
+  .topbar{display:flex; align-items:center; padding:22px clamp(20px,5vw,72px); border-bottom:1px solid var(--divider);}
+  .topbar img{height:32px; width:auto; display:block;}
+
+  .topnav{max-width:920px; margin:0 auto; padding:20px 24px 0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  .topnav a{font-size:12px; letter-spacing:.04em; text-transform:uppercase; font-weight:600; color:var(--ink-soft); text-decoration:none;}
+  .topnav a:hover{color:var(--ink);}
+  .topnav .group{display:flex; gap:22px;}
+
+  .wrap{max-width:920px; margin:0 auto; padding:0 24px 140px;}
+
+  /* ------------------------------------------------------------- hero -- */
+  header.hero{padding:56px 0 40px;}
+  .eyebrow{
+    font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700;
+    color:var(--red); display:inline-flex; align-items:center; gap:8px; margin-bottom:20px;
+    border:1px solid var(--red); padding:6px 12px;
+  }
+  h1.headline{font-weight:700; font-size:clamp(28px, 4.6vw, 40px); line-height:1.2; letter-spacing:0; margin:0 0 14px; max-width:24ch;}
+  p.lede{font-size:16px; line-height:1.6; color:var(--ink-soft); max-width:58ch; margin:0 0 8px;}
+
+  .btn{
+    font-size:14.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    background:var(--red); color:#fff; border:none; padding:13px 22px; border-radius:var(--radius);
+    cursor:pointer; display:inline-flex; align-items:center; gap:10px; transition:background .15s ease;
+  }
+  .btn:hover{background:var(--red-dark);}
+  .btn[disabled]{opacity:.4; cursor:default; pointer-events:none;}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--ink);}
+  .btn.ghost:hover{background:var(--bg-raised);}
+  .btn.small{padding:9px 16px; font-size:12.5px;}
+
+  /* -------------------------------------------------------------- tabs -- */
+  .chips{display:flex; border:1px solid var(--divider-strong); margin-bottom:8px; flex-wrap:wrap;}
+  .chip{
+    flex:1; min-width:140px; font-size:13.5px; font-weight:600;
+    padding:13px 10px; border:none; border-right:1px solid var(--divider-strong);
+    background:transparent; cursor:pointer; color:var(--ink-soft); transition:all .15s ease;
+  }
+  .chip:last-child{border-right:none;}
+  .chip.selected{background:var(--red); color:#fff;}
+  .chip.small{padding:9px 14px; font-size:12.5px; flex:none; min-width:0;}
+
+  /* ------------------------------------------------------------ panels -- */
+  section.panel{border-top:1px solid var(--divider); padding:44px 0 8px; display:none;}
+  section.panel.active{display:block;}
+  section.panel .eyebrow{
+    display:block; font-size:13px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--red); font-weight:700; margin-bottom:12px; border:none; padding:0;
+  }
+  h2.panel-title{font-weight:800; text-transform:uppercase; font-size:24px; margin:0 0 8px;}
+  h3.sub-title{font-weight:800; text-transform:uppercase; font-size:16px; margin:40px 0 10px;}
+  p.panel-sub{color:var(--ink-soft); font-size:14.5px; line-height:1.6; margin:0 0 26px; max-width:64ch;}
+  p.note{font-size:12.5px; color:var(--ink-faint); line-height:1.6; margin:8px 0 0;}
+
+  .callout{
+    border:1px dashed var(--divider-strong); padding:16px 18px; margin-bottom:26px;
+    font-size:13px; line-height:1.6; color:var(--ink-soft);
+  }
+  .callout b{color:var(--ink);}
+
+  /* --------------------------------------------------------------- kv -- */
+  .card{background:var(--bg-raised); border:1px solid var(--divider); padding:24px; margin-bottom:20px;}
+  .kv-row{display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--divider); font-size:13px;}
+  .kv-row:last-child{border-bottom:none;}
+  .kv-row .k{color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; font-size:10.5px;}
+  .kv-row .v{color:var(--ink); text-align:right; font-weight:600;}
+
+  /* ---------------------------------------------------- shipments table -- */
+  .ship-table{background:var(--bg); border:1px solid var(--divider); overflow:hidden; margin-bottom:10px;}
+  .ship-row{display:grid; grid-template-columns:1fr 1.3fr 1fr 1fr 1.3fr; font-size:13px;}
+  .ship-row > div{padding:12px 14px; border-bottom:1px solid var(--divider); overflow:hidden;}
+  .ship-row:last-child > div{border-bottom:none;}
+  .ship-row.head > div{font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:600;}
+  .ship-row .verified{display:block; font-size:10px; letter-spacing:.04em; text-transform:uppercase; color:var(--ok); margin-top:3px;}
+  @media(max-width:760px){
+    .ship-row{grid-template-columns:1fr; padding:14px; gap:6px;}
+    .ship-row > div{padding:2px 0; border-bottom:none;}
+    .ship-row.head{display:none;}
+    .ship-row{border-bottom:1px solid var(--divider);}
+  }
+
+  /* ------------------------------------------------------------ sealed -- */
+  .sealed{border:none; padding:0; margin:0;}
+  .sealed summary{
+    list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-faint); border:1px dashed var(--divider-strong); padding:5px 9px;
+  }
+  .sealed summary::-webkit-details-marker{display:none;}
+  .sealed summary:hover{color:var(--ink); border-color:var(--ink);}
+  .sealed summary::before{content:"—"; display:inline-block;}
+  .sealed[open] summary::before{content:"—";}
+  .sealed-body{
+    margin-top:8px; padding:12px 14px; border:1px dashed var(--divider-strong);
+    background:var(--bg-raised); font-size:12px; line-height:1.6; color:var(--ink-soft); max-width:340px;
+  }
+  .sealed-body .ref{display:block; font-size:11.5px; color:var(--ink); margin-bottom:6px; word-break:break-all;}
+  .sealed-body .k{display:block; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin-bottom:2px;}
+
+  /* -------------------------------------------------------------- kpis -- */
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:6px 0 28px;}
+  @media(max-width:680px){.stats{grid-template-columns:1fr 1fr;}}
+  .stat{background:var(--bg-raised); border:1px solid var(--divider); padding:18px;}
+  .stat .num{font-weight:800; font-size:24px; font-variant-numeric:tabular-nums;}
+  .stat .lbl{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin-top:4px;}
+
+  /* -------------------------------------------------------- comparison -- */
+  .atten-compare{display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:stretch; margin-bottom:12px;}
+  @media(max-width:680px){.atten-compare{grid-template-columns:1fr;}}
+  .atten-card{background:var(--bg-raised); border:1px solid var(--divider); padding:22px;}
+  .atten-card.new{border-color:var(--ink);}
+  .atten-card .t-eyebrow{font-size:11px; letter-spacing:.06em; color:var(--ink-faint); text-transform:uppercase; margin-bottom:12px; font-weight:700;}
+  .not-offered-row{padding:9px 0; border-bottom:1px solid var(--divider); font-size:13px;}
+  .not-offered-row:last-child{border-bottom:none;}
+  .not-offered-row .f{font-weight:600;}
+  .not-offered-row .d{display:block; font-size:11.5px; color:var(--ink-faint); margin-top:2px;}
+
+  /* -------------------------------------------------------- decisions --- */
+  .decision-row{display:flex; gap:12px; align-items:flex-start; padding:14px 4px; border-bottom:1px solid var(--divider);}
+  .decision-row.denied{border-left:3px solid var(--red); background:rgba(208,2,27,.04); padding-left:12px;}
+  .decision-row .stamp-mark{
+    font-weight:700; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+    border:1px solid currentColor; padding:4px 8px; flex-shrink:0; white-space:nowrap; margin-top:1px;
+  }
+  .decision-row.denied .stamp-mark{color:var(--red);}
+  .decision-row.allowed .stamp-mark{color:var(--ok);}
+  .decision-row .body{flex:1; min-width:0;}
+  .decision-row .reason{font-size:13px; color:var(--ink); line-height:1.5;}
+  .decision-row .meta{font-size:11px; color:var(--ink-faint); margin-top:3px;}
+
+  /* ------------------------------------------------------------- forms -- */
+  .field-label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:8px; display:block;}
+  input[type="text"], input[type="url"]{
+    width:100%; font:inherit; font-size:13.5px; padding:11px 12px; border:1px solid var(--divider-strong);
+    border-radius:var(--radius); background:var(--bg); color:var(--ink);
+  }
+  .checkbox-row{display:flex; align-items:center; gap:8px; font-size:13px; margin-bottom:10px;}
+  .checkbox-row input{width:15px; height:15px;}
+
+  /* -------------------------------------------------------------- code -- */
+  .snippet{
+    background:var(--bg-raised); border:1px solid var(--divider); padding:18px 20px;
+    font-size:12.5px; line-height:1.65; overflow-x:auto; white-space:pre; color:var(--ink); margin-bottom:10px;
+  }
+  .snippet .cm{color:var(--ink-faint);}
+
+  /* ----------------------------------------------------------- badge --- */
+  .tracking-mock{background:#fff; border:1px solid var(--divider); overflow:hidden; max-width:360px; margin-top:14px;}
+  .tm-head{background:var(--ink); color:#fff; padding:14px 18px; font-size:15px; font-weight:700; display:flex; justify-content:space-between; align-items:center;}
+  .tm-head .store{font-size:11px; letter-spacing:.04em; opacity:.7;}
+  .tm-body{padding:18px;}
+  .badge{
+    display:inline-flex; align-items:center; gap:8px; border:1px solid var(--divider-strong); border-radius:20px;
+    padding:7px 13px 7px 9px; cursor:pointer; position:relative; background:var(--bg-raised);
+  }
+  .badge .mark{width:18px; height:18px; border-radius:50%; overflow:hidden; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .badge .mark img{width:100%; height:100%; object-fit:cover; display:block;}
+  .badge .txt{font-size:11px; letter-spacing:.02em; color:var(--ink-soft);}
+
+  footer{padding:60px 0 20px;}
+  .fine{font-size:11.5px; letter-spacing:.04em; color:var(--ink-faint);}
+
+  @media(prefers-reduced-motion: reduce){*{transition:none !important;}}
+</style>
+</head>
+<body>
+
+<div class="topbar"><img src="./assets/logo-large.png" alt="Ship2MyID"></div>
+<div class="topnav">
+  <a href="./index.html">← Choose a different flow</a>
+  <div class="group">
+    <a href="./consumer-flow.html">See the consumer flow →</a>
+    <a href="./operator-flow.html">See the operator flow →</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Merchant console — Alba Goods</div>
+    <h1 class="headline">Everything you need to run deliveries. Nothing you're structurally able to see.</h1>
+    <p class="lede">This is the exact shape of what the Ship2MyID merchant SDK returns — no more. Every number below comes from a live session running in your browser; where a customer's address would normally sit, you'll find why it can't.</p>
+  </header>
+
+  <div class="chips" id="tabs">
+    <button class="chip selected" data-tab="shipments">Shipments</button>
+    <button class="chip" data-tab="usage">Usage &amp; metering</button>
+    <button class="chip" data-tab="integration">Integration</button>
+    <button class="chip" data-tab="policy">Policy</button>
+  </div>
+
+  <!-- ============================================== SHIPMENTS ===== -->
+  <section class="panel active" id="panel-shipments">
+    <div class="eyebrow">Shipments</div>
+    <h2 class="panel-title">Shipments in flight</h2>
+    <p class="panel-sub">Every row below is exactly what <code class="mono">checkout()</code> handed back at the moment the order was placed — an opaque recipient reference, an operator, a promised delivery window. Nothing else was ever received.</p>
+
+    <div class="callout"><b>There's no live status feed here, and that's not an oversight.</b> Nothing calls back to this console after checkout — Ship2MyID's notification port is addressed to the buyer, never to a merchant participant id. What's below is frozen at the moment each order shipped; it will never update on its own.</div>
+
+    <div class="ship-table" id="ship-table"></div>
+    <p class="note">Recipient is a pairwise S2ID — a fresh, unrelated code for every merchant that ever transacts with the same buyer. See the Consumer flow for how it's derived and why it can't be matched back to a person.</p>
+
+    <h3 class="sub-title">The address column</h3>
+    <p class="panel-sub">Click a sealed marker. It doesn't hide a value — it shows you the reference this order actually carries in place of one, and why no key on this side of the network can turn it into a place.</p>
+  </section>
+
+  <!-- ================================================== USAGE ===== -->
+  <section class="panel" id="panel-usage">
+    <div class="eyebrow">Usage &amp; metering</div>
+    <h2 class="panel-title">Usage and metering</h2>
+    <p class="panel-sub">Real fields off <code class="mono">UsageMeter</code> — the fixed-window quota every merchant integration is metered against, not a marketing dashboard.</p>
+
+    <div class="stats" id="usage-stats"></div>
+
+    <h3 class="sub-title">Quota window</h3>
+    <div class="card">
+      <div class="kv-row"><span class="k">Participant</span><span class="v" id="meter-participant"></span></div>
+      <div class="kv-row"><span class="k">Window limit</span><span class="v" id="meter-limit"></span></div>
+      <div class="kv-row"><span class="k">Calls used this window</span><span class="v" id="meter-used"></span></div>
+      <div class="kv-row"><span class="k">Calls remaining</span><span class="v" id="meter-remaining"></span></div>
+    </div>
+    <p class="panel-sub" style="margin-top:16px;">This is the real production default — 1000 calls per 60-second window, the same <code class="mono">defaultUsageMeter()</code> ships with. Clicking through it 1000 times isn't a demo; fast-forwarding the counter and making one real call is.</p>
+    <button class="btn ghost small" id="btn-fastforward">Fast-forward to the quota boundary →</button>
+    <p class="note" id="fastforward-note"></p>
+
+    <h3 class="sub-title">Exchange volume by operator</h3>
+    <div class="card" id="operator-volume"></div>
+    <p class="note">One operator in this integration today. Each additional postal operator gets its own row here — never a merged total that hides which network actually moved a parcel.</p>
+
+    <h3 class="sub-title">Shipments by geo bucket</h3>
+    <p class="panel-sub">Coarse geography only — never a postcode, never an address. Buckets below the k-anonymity floor are suppressed the same way a cohort request is.</p>
+    <div class="ship-table" id="geo-table"></div>
+    <div style="display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;">
+      <button class="btn ghost small" data-preview="3">Preview a bucket of 3</button>
+      <button class="btn ghost small" data-preview="40">Preview a bucket of 40</button>
+    </div>
+    <div class="decision-row" id="preview-result" style="display:none; margin-top:10px; border-bottom:none;"></div>
+  </section>
+
+  <!-- ============================================ INTEGRATION ===== -->
+  <section class="panel" id="panel-integration">
+    <div class="eyebrow">Integration</div>
+    <h2 class="panel-title">Integration</h2>
+    <p class="panel-sub">What a developer pastes in — shown here so the decision-maker in the room can see there's nothing more to it than this.</p>
+
+    <h3 class="sub-title">Credentials</h3>
+    <div class="card">
+      <div class="kv-row"><span class="k">Participant ID</span><span class="v mono" id="int-participant"></span></div>
+      <div class="kv-row"><span class="k">Key ID</span><span class="v mono" id="int-keyid"></span></div>
+      <div class="kv-row"><span class="k">Signing key fingerprint</span><span class="v mono" id="int-fingerprint"></span></div>
+    </div>
+    <p class="note">There's no bearer token to leak — every request is signed locally with an Ed25519 key, the same way <code class="mono">packages/registry</code> verifies it on arrival. The fingerprint above is a real, freshly generated key for this browser session; only its public half would ever be registered with the network. Ship2MyID never receives, stores, or can reconstruct the private half.</p>
+
+    <h3 class="sub-title">SDK snippet</h3>
+    <div class="snippet"><span class="cm">// The entire merchant-facing surface. No address parameter exists to pass.</span>
+import { MerchantClient } from "@ship2myid/sdk";
+
+const client = new MerchantClient({
+  platform,
+  participantId: "alba-goods.example",
+  keyId: "k1",
+  privateKey: process.env.SHIP2MYID_PRIVATE_KEY,
+});
+
+const result = client.checkout(
+  { s2id, weightKg: 2, carrier: "MER-POST", destinationKind: "locker" },
+  subjectRef
+);
+<span class="cm">// result: { s2id, capabilityId, geoBucket, serviceLevel,
+//           estimatedDelivery, verifiedHuman }</span></div>
+    <p class="note">This is the published SDK's actual call shape, not illustrative pseudocode — a hosted API wraps the same six-field contract 1:1.</p>
+
+    <h3 class="sub-title">Webhook configuration</h3>
+    <div class="card">
+      <span class="field-label">Endpoint URL</span>
+      <input type="url" placeholder="https://yourstore.example.com/webhooks/ship2myid" id="webhook-url">
+      <div style="margin-top:16px;">
+        <span class="field-label">Events</span>
+        <label class="checkbox-row"><input type="checkbox" checked disabled> checkout.completed <span class="note" style="margin:0 0 0 6px;">— on_checkout, success</span></label>
+        <label class="checkbox-row"><input type="checkbox" checked disabled> checkout.failed <span class="note" style="margin:0 0 0 6px;">— on_checkout, quota or tier rejection</span></label>
+      </div>
+      <button class="btn small" id="btn-save-webhook" style="margin-top:6px;">Save</button>
+      <span class="note" id="webhook-saved"></span>
+    </div>
+    <p class="note">These two events are the entire callback surface a merchant integration receives — the same <code class="mono">onCheckoutReady</code> / <code class="mono">onCheckoutError</code> pair available in-process today, configured here as their hosted, HTTP equivalent.</p>
+
+    <h3 class="sub-title">"Powered by Ship2MyID" mark</h3>
+    <label class="checkbox-row"><input type="checkbox" checked id="badge-toggle"> Show the mark on your tracking page</label>
+    <div class="tracking-mock" id="badge-preview">
+      <div class="tm-head"><span>Your order</span><span class="store">ALBA GOODS</span></div>
+      <div class="tm-body">
+        <div class="badge">
+          <span class="mark"><img src="./assets/logo-small.png" alt=""></span>
+          <span class="txt">Powered by Ship2MyID</span>
+        </div>
+      </div>
+    </div>
+    <p class="note">The one part of this console that's a business decision, not a cryptographic one. See the Operator flow for what a buyer sees when they hover it.</p>
+  </section>
+
+  <!-- ================================================== POLICY ===== -->
+  <section class="panel" id="panel-policy">
+    <div class="eyebrow">Policy</div>
+    <h2 class="panel-title">Policy</h2>
+    <p class="panel-sub">One signed, versioned rule governs every checkout you attempt. Everything else your buyers never had to hand over isn't a setting you can toggle — it was never representable in the first place.</p>
+
+    <div class="atten-compare">
+      <div class="atten-card">
+        <div class="t-eyebrow">Governed by policy</div>
+        <div class="kv-row"><span class="k">Minimum tier to ship</span><span class="v" id="pol-tier"></span></div>
+        <div class="kv-row"><span class="k">Policy version</span><span class="v" id="pol-version"></span></div>
+        <div class="kv-row"><span class="k">Policy hash</span><span class="v mono" id="pol-hash"></span></div>
+        <div class="kv-row"><span class="k">Signed by</span><span class="v mono" id="pol-signer"></span></div>
+      </div>
+      <div class="atten-card new">
+        <div class="t-eyebrow">Never on offer, at any tier</div>
+        <div class="not-offered-row"><span class="f">Street address</span><span class="d">No field returns this. Not withheld — absent.</span></div>
+        <div class="not-offered-row"><span class="f">Full name / phone</span><span class="d">Never part of the checkout contract.</span></div>
+        <div class="not-offered-row"><span class="f">Standing consent</span><span class="d">Every capability is single-event; there's no "always allow."</span></div>
+      </div>
+    </div>
+    <p class="note">Raise or lower the tier rule and the network requires more or less proofing before it will mint. Nothing about it — signed, versioned, replayable against the exact bytes that were active for any past decision — touches identity or location. That's a separate axis this policy doesn't govern because nothing here needs to.</p>
+
+    <h3 class="sub-title">Try a request</h3>
+    <p class="panel-sub">Pick a buyer's proofing tier and run a real checkout attempt against the policy above. Denials aren't a UI state — they're the identical <code class="mono">TierTooLow</code> / <code class="mono">QuotaExceeded</code> errors a live integration would catch.</p>
+    <span class="field-label">Buyer's proofing tier</span>
+    <div class="chips" id="tier-picker" style="max-width:360px; margin-bottom:16px;">
+      <button class="chip" data-tier="1">Tier 1</button>
+      <button class="chip selected" data-tier="2">Tier 2</button>
+      <button class="chip" data-tier="3">Tier 3</button>
+    </div>
+    <span class="field-label">Destination</span>
+    <div class="chips" id="dest-picker" style="max-width:360px; margin-bottom:20px;">
+      <button class="chip selected" data-dest="door">Door</button>
+      <button class="chip" data-dest="access-point">Access point</button>
+      <button class="chip" data-dest="locker">Locker</button>
+    </div>
+    <button class="btn" id="btn-run-checkout">Run checkout attempt →</button>
+
+    <h3 class="sub-title">Recent policy decisions <span id="decision-counts" class="note" style="text-transform:none; letter-spacing:0; font-size:12.5px;"></span></h3>
+    <div id="decision-log"></div>
+  </section>
+
+  <footer>
+    <p class="fine">SHIP2MYID · MERCHANT CONSOLE DEMO · LOCAL SESSION — NOTHING ON THIS PAGE LEAVES YOUR BROWSER</p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const enc = new TextEncoder();
+
+  // ---- crypto helpers (mirrors packages/identity + packages/capability, same as the other two flows) --
+  async function hmac(keyBytes, msg){
+    const key = await crypto.subtle.importKey("raw", keyBytes, {name:"HMAC", hash:"SHA-256"}, false, ["sign"]);
+    return new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(msg)));
+  }
+  function b32(bytes, chars){
+    const A = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    let out = "";
+    for (let i=0;i<chars;i++) out += A[bytes[i % bytes.length] % A.length];
+    return out;
+  }
+  async function deriveS2ID(root, relyingParty, prefix="MER"){
+    const mac = await hmac(root, "s2id/pairwise/" + relyingParty);
+    const body = b32(mac, 12);
+    return `${prefix}-${body.slice(0,4)}-${body.slice(4,8)}-${body.slice(8,12)}`;
+  }
+  function randomBytes(n){ return crypto.getRandomValues(new Uint8Array(n)); }
+  function hex(bytes){ return Array.from(bytes).map(b=>b.toString(16).padStart(2,"0")).join(""); }
+
+  // ---- canonical JSON + digest (mirrors packages/registry/src/signing.ts) --
+  function canonical(value){
+    if (value === null || typeof value !== "object") return JSON.stringify(value);
+    if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
+    const keys = Object.keys(value).sort();
+    return `{${keys.map(k => `${JSON.stringify(k)}:${canonical(value[k])}`).join(",")}}`;
+  }
+  async function digestOf(body){
+    const hash = await crypto.subtle.digest("SHA-256", enc.encode(canonical(body)));
+    return btoa(String.fromCharCode(...new Uint8Array(hash)));
+  }
+
+  // Same rule packages/core exports as K_ANON_FLOOR/cohortSize — reused
+  // verbatim, not reimplemented, for the geo-bucket breakdown below.
+  const K_ANON_FLOOR = 25;
+  function cohortSize(matching){ return matching >= K_ANON_FLOOR ? matching : 0; }
+
+  const MERCHANT = { participantId: "alba-goods.example", displayName: "Alba Goods", keyId: "k1" };
+  const OPERATOR_CARRIER = "MER-POST";
+  const GEO_BUCKETS = ["MRD-48","MRD-48","MRD-48","MRD-22","MRD-91"];
+
+  let shipments = [];
+  let decisions = [];
+  let orderSeq = 1041;
+
+  // Mirrors packages/metering/src/meter.ts's UsageMeter exactly: fixed
+  // window, per participant, throws once the window's count meets the
+  // limit. Real production default (1000 calls / 60s) — not scaled down
+  // for the demo, see the fast-forward control below instead.
+  const meter = { limit: 1000, windowMs: 60_000, windowStart: null, count: 0 };
+  function meterConsume(now = Date.now()){
+    if (meter.windowStart === null || now - meter.windowStart >= meter.windowMs){
+      meter.windowStart = now; meter.count = 1; return;
+    }
+    if (meter.count >= meter.limit){
+      throw new Error(`${MERCHANT.participantId} exceeded ${meter.limit} calls per ${meter.windowMs}ms window`);
+    }
+    meter.count += 1;
+  }
+  function meterRemaining(now = Date.now()){
+    if (meter.windowStart === null || now - meter.windowStart >= meter.windowMs) return meter.limit;
+    return Math.max(0, meter.limit - meter.count);
+  }
+
+  // ---- policy (mirrors packages/policy/src/policy.ts's default: v1, minTierToShip 2, self-signed) --
+  let activePolicy = null;
+  async function initPolicy(){
+    const signer = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+    const policy = { version: 1, minTierToShip: 2 };
+    const hash = await digestOf(policy);
+    const sig = new Uint8Array(await crypto.subtle.sign("Ed25519", signer.privateKey, enc.encode(hash)));
+    activePolicy = { policy, hash, signature: hex(sig), signerKeyId: "platform-default" };
+  }
+
+  function isVerifiedHuman(tier){ return tier >= 1; }
+
+  /**
+   * Mirrors Platform.createShipment() in order: meter first (a merchant
+   * over quota is rejected before tier-gating or minting run at all), then
+   * the tier comparison against the active policy. Only on both passing
+   * does a capability actually get minted — this function is the one path
+   * every screen's numbers are drawn from.
+   */
+  async function attemptCheckout(tier, destinationKind){
+    const now = Date.now();
+    try {
+      meterConsume(now);
+    } catch (err){
+      logDecision({ allowed:false, tier, reason: `${err.message} — QuotaExceeded` });
+      return;
+    }
+    if (tier < activePolicy.policy.minTierToShip){
+      logDecision({ allowed:false, tier, reason: `tier ${tier} < ${activePolicy.policy.minTierToShip} — TierTooLow` });
+      return;
+    }
+    const root = randomBytes(32);
+    const s2id = await deriveS2ID(root, MERCHANT.participantId);
+    const geoBucket = GEO_BUCKETS[Math.floor(Math.random()*GEO_BUCKETS.length)];
+    const eta = new Date(now + (2 + Math.floor(Math.random()*4)) * 24*3600*1000);
+    const shipment = {
+      orderId: `ORD-${orderSeq++}`,
+      s2id,
+      capabilityId: crypto.randomUUID(),
+      geoBucket,
+      serviceLevel: "Standard",
+      estimatedDelivery: eta.toLocaleDateString(undefined, {month:"short", day:"numeric"}),
+      carrier: OPERATOR_CARRIER,
+      destinationKind,
+      verifiedHuman: isVerifiedHuman(tier),
+    };
+    shipments.push(shipment);
+    logDecision({ allowed:true, tier, reason: `tier ${tier} ≥ ${activePolicy.policy.minTierToShip} — capability minted`, capabilityId: shipment.capabilityId });
+    renderShipments();
+  }
+
+  function logDecision(entry){
+    decisions.unshift({ ...entry, at: new Date() });
+    renderDecisions();
+    renderUsage();
+  }
+
+  // ------------------------------------------------------------ render --
+  function fmtDestLabel(d){
+    return { door: "Door", "access-point": "Access point", locker: "Locker" }[d] ?? d;
+  }
+
+  function sealedCellHTML(shipment){
+    return `
+      <details class="sealed">
+        <summary>No field</summary>
+        <div class="sealed-body">
+          <span class="k">Reference this order carries instead</span>
+          <span class="ref mono">${shipment.capabilityId}</span>
+          No key anywhere in Alba Goods' systems can turn that into a place — there's no address field on this record, not hidden, never built. See the Consumer flow for the full derivation.
+        </div>
+      </details>`;
+  }
+
+  function renderShipments(){
+    const table = document.getElementById("ship-table");
+    const rows = shipments.slice().reverse().map(s => `
+      <div class="ship-row">
+        <div>${s.orderId}</div>
+        <div class="mono">${s.s2id}${s.verifiedHuman ? '<span class="verified">Verified human</span>' : ""}</div>
+        <div>${s.carrier}</div>
+        <div>${s.estimatedDelivery}</div>
+        <div>${sealedCellHTML(s)}</div>
+      </div>`).join("");
+    table.innerHTML = `
+      <div class="ship-row head"><div>Order</div><div>Recipient</div><div>Operator</div><div>ETA band</div><div>Address</div></div>
+      ${rows || `<div class="ship-row"><div style="grid-column:1/-1; color:var(--ink-faint);">No shipments yet — run a checkout attempt on the Policy tab.</div></div>`}
+    `;
+  }
+
+  function renderUsage(){
+    const allowed = decisions.filter(d => d.allowed).length;
+    const denied = decisions.filter(d => !d.allowed).length;
+
+    document.getElementById("usage-stats").innerHTML = `
+      <div class="stat"><div class="num">${shipments.length}</div><div class="lbl">Capabilities issued, this session</div></div>
+      <div class="stat"><div class="num">${allowed}</div><div class="lbl">Policy decisions — allowed</div></div>
+      <div class="stat"><div class="num">${denied}</div><div class="lbl">Policy decisions — denied</div></div>
+    `;
+
+    document.getElementById("meter-participant").textContent = MERCHANT.participantId;
+    document.getElementById("meter-limit").textContent = `${meter.limit} / ${meter.windowMs/1000}s`;
+    document.getElementById("meter-used").textContent = meter.windowStart === null ? "0" : String(meter.count);
+    document.getElementById("meter-remaining").textContent = String(meterRemaining());
+
+    document.getElementById("operator-volume").innerHTML = `
+      <div class="kv-row"><span class="k">${OPERATOR_CARRIER} — Republic of Meridia Post</span><span class="v">${shipments.length} routed</span></div>
+    `;
+
+    const byBucket = new Map();
+    for (const s of shipments) byBucket.set(s.geoBucket, (byBucket.get(s.geoBucket) ?? 0) + 1);
+    const geoRows = [...byBucket.entries()].map(([bucket, count]) => {
+      const size = cohortSize(count);
+      return `<div class="ship-row" style="grid-template-columns:1fr 1fr;">
+        <div>${bucket}</div>
+        <div>${size === 0 ? `< ${K_ANON_FLOOR} — not broken out` : `${size} shipments`}</div>
+      </div>`;
+    }).join("");
+    document.getElementById("geo-table").innerHTML = `
+      <div class="ship-row head" style="grid-template-columns:1fr 1fr;"><div>Geo bucket</div><div>Count</div></div>
+      ${geoRows || `<div class="ship-row" style="grid-template-columns:1fr 1fr;"><div style="grid-column:1/-1; color:var(--ink-faint);">No shipments yet.</div></div>`}
+    `;
+  }
+
+  function renderDecisions(){
+    const allowed = decisions.filter(d => d.allowed).length;
+    const denied = decisions.filter(d => !d.allowed).length;
+    document.getElementById("decision-counts").textContent = `— ${allowed} allowed · ${denied} denied`;
+
+    document.getElementById("decision-log").innerHTML = decisions.map(d => `
+      <div class="decision-row ${d.allowed ? "allowed" : "denied"}">
+        <span class="stamp-mark">${d.allowed ? "ALLOWED" : "DENIED"}</span>
+        <div class="body">
+          <div class="reason">${d.reason}</div>
+          <div class="meta">tier ${d.tier} · ${d.at.toLocaleTimeString()}${d.capabilityId ? " · " + d.capabilityId.slice(0,8) : ""}</div>
+        </div>
+      </div>
+    `).join("") || `<p class="note">No requests run yet.</p>`;
+  }
+
+  function renderPolicy(){
+    document.getElementById("pol-tier").textContent = `Tier ${activePolicy.policy.minTierToShip}`;
+    document.getElementById("pol-version").textContent = `v${activePolicy.policy.version}`;
+    document.getElementById("pol-hash").textContent = activePolicy.hash.slice(0, 20) + "…";
+    document.getElementById("pol-signer").textContent = activePolicy.signerKeyId;
+  }
+
+  // -------------------------------------------------------------- tabs --
+  document.querySelectorAll("#tabs .chip").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll("#tabs .chip").forEach(c => c.classList.remove("selected"));
+      tab.classList.add("selected");
+      document.querySelectorAll("section.panel").forEach(p => p.classList.remove("active"));
+      document.getElementById(`panel-${tab.dataset.tab}`).classList.add("active");
+    });
+  });
+
+  // ------------------------------------------------------- tier/dest picker --
+  let pickedTier = 2, pickedDest = "door";
+  document.querySelectorAll("#tier-picker .chip").forEach(c => {
+    c.addEventListener("click", () => {
+      document.querySelectorAll("#tier-picker .chip").forEach(x => x.classList.remove("selected"));
+      c.classList.add("selected");
+      pickedTier = Number(c.dataset.tier);
+    });
+  });
+  document.querySelectorAll("#dest-picker .chip").forEach(c => {
+    c.addEventListener("click", () => {
+      document.querySelectorAll("#dest-picker .chip").forEach(x => x.classList.remove("selected"));
+      c.classList.add("selected");
+      pickedDest = c.dataset.dest;
+    });
+  });
+  document.getElementById("btn-run-checkout").addEventListener("click", () => {
+    attemptCheckout(pickedTier, pickedDest);
+  });
+
+  // ------------------------------------------------------------ quota ---
+  document.getElementById("btn-fastforward").addEventListener("click", async () => {
+    const now = Date.now();
+    if (meter.windowStart === null || now - meter.windowStart >= meter.windowMs){ meter.windowStart = now; meter.count = 0; }
+    meter.count = meter.limit;
+    await attemptCheckout(pickedTier, pickedDest);
+    document.getElementById("fastforward-note").textContent =
+      "Counter fast-forwarded to the boundary, then one real checkout call was made — it hit the same QuotaExceeded a 1001st call would in production.";
+  });
+
+  // ------------------------------------------------------ geo preview ---
+  document.querySelectorAll("[data-preview]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const matching = Number(btn.dataset.preview);
+      const size = cohortSize(matching);
+      const el = document.getElementById("preview-result");
+      el.style.display = "flex";
+      el.className = `decision-row ${size === 0 ? "denied" : "allowed"}`;
+      el.innerHTML = `<span class="stamp-mark">${size === 0 ? "SUPPRESSED" : "SHOWN"}</span><div class="body"><div class="reason">${size === 0 ? `A bucket of ${matching} stays below floor ${K_ANON_FLOOR} — not broken out.` : `A bucket of ${size} clears the floor — shown as a count only.`}</div></div>`;
+    });
+  });
+
+  // -------------------------------------------------------- integration --
+  async function initIntegration(){
+    document.getElementById("int-participant").textContent = MERCHANT.participantId;
+    document.getElementById("int-keyid").textContent = MERCHANT.keyId;
+    const kp = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
+    const rawPub = await crypto.subtle.exportKey("raw", kp.publicKey);
+    const fp = hex(new Uint8Array(await crypto.subtle.digest("SHA-256", rawPub))).toUpperCase();
+    document.getElementById("int-fingerprint").textContent = `${fp.slice(0,8)} … ${fp.slice(-8)}`;
+  }
+
+  document.getElementById("btn-save-webhook").addEventListener("click", () => {
+    document.getElementById("webhook-saved").textContent = "Saved to this session.";
+  });
+  document.getElementById("badge-toggle").addEventListener("change", (e) => {
+    document.getElementById("badge-preview").style.display = e.target.checked ? "block" : "none";
+  });
+
+  // -------------------------------------------------------------- boot --
+  (async () => {
+    await initPolicy();
+    renderPolicy();
+    await initIntegration();
+
+    // Seed a believable session: three ordinary checkouts and one buyer
+    // who hasn't vouched to the required tier — the same decision path a
+    // live integration would hit, run for real at load time.
+    await attemptCheckout(2, "door");
+    await attemptCheckout(3, "locker");
+    await attemptCheckout(2, "access-point");
+    await attemptCheckout(1, "door");
+
+    renderShipments();
+    renderUsage();
+    renderDecisions();
+  })();
+})();
+</script>
+</body>
+</html>

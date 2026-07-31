@@ -21,7 +21,8 @@
   h1{font-weight:700; font-size:clamp(30px,5.5vw,44px); line-height:1.2; letter-spacing:0; margin:0 0 18px; max-width:18ch;}
   p.lede{font-size:16px; line-height:1.6; color:var(--ink-soft); max-width:52ch; margin:0 0 56px;}
 
-  .choice{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  .choice{display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;}
+  @media(max-width:960px){.choice{grid-template-columns:1fr 1fr;}}
   @media(max-width:680px){.choice{grid-template-columns:1fr;}}
   a.card{
     display:block; text-decoration:none; color:var(--ink);
@@ -64,6 +65,14 @@
       <h2>Operator flow</h2>
       <p>Generate the actual scannable label for that ticket, verify it offline at the sorting bench, and see the network mark that follows the parcel to the merchant's own tracking page.</p>
       <span class="go">Enter as the operator <span class="arrow">→</span></span>
+    </a>
+
+    <a class="card" href="./merchant-console.html">
+      <svg class="glyph" viewBox="0 0 40 40" fill="none"><rect x="6" y="8" width="28" height="24" stroke="#161616" stroke-width="1.6"/><path d="M6 16h28M13 22h6M13 26h10" stroke="#161616" stroke-width="1.6"/></svg>
+      <div class="k-eyebrow">Merchant's desk</div>
+      <h2>Merchant console</h2>
+      <p>See exactly what a merchant's own dashboard can show — shipments, usage, integration, and policy — with the address column sealed and inspectable, not just missing.</p>
+      <span class="go">Enter as the merchant <span class="arrow">→</span></span>
     </a>
   </div>
 
