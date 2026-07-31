@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ship2MyID — wallet</title>
+<link rel="icon" href="./assets/logo-small.png">
+<style>
+  :root{
+    --bg:#ffffff; --bg-raised:#F6F4EF; --ink:#161616; --ink-soft:rgba(22,22,22,.66);
+    --ink-faint:rgba(22,22,22,.46); --red:#D0021B; --red-dark:#A5010F;
+    --divider:rgba(22,22,22,.14); --divider-strong:rgba(22,22,22,.28); --ok:#1F6F43; --radius:0px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing:antialiased;}
+  code, .mono{font-family:ui-monospace, Menlo, Consolas, monospace;}
+  ::selection{background:var(--red); color:#fff;}
+
+  .topbar{display:flex; align-items:center; padding:22px clamp(20px,5vw,72px); border-bottom:1px solid var(--divider);}
+  .topbar img{height:32px; width:auto; display:block;}
+
+  .topnav{max-width:920px; margin:0 auto; padding:20px 24px 0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  .topnav a{font-size:12px; letter-spacing:.04em; text-transform:uppercase; font-weight:600; color:var(--ink-soft); text-decoration:none;}
+  .topnav a:hover{color:var(--ink);}
+  .topnav .group{display:flex; gap:22px; flex-wrap:wrap;}
+
+  .wrap{max-width:920px; margin:0 auto; padding:0 24px 140px;}
+
+  /* ------------------------------------------------------------- hero -- */
+  header.hero{padding:56px 0 40px;}
+  .eyebrow{
+    font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; font-weight:700;
+    color:var(--red); display:inline-flex; align-items:center; gap:8px; margin-bottom:20px;
+    border:1px solid var(--red); padding:6px 12px;
+  }
+  h1.headline{font-weight:700; font-size:clamp(28px, 4.6vw, 40px); line-height:1.2; letter-spacing:0; margin:0 0 14px; max-width:24ch;}
+  p.lede{font-size:16px; line-height:1.6; color:var(--ink-soft); max-width:58ch; margin:0 0 8px;}
+
+  .btn{
+    font-size:14.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    background:var(--red); color:#fff; border:none; padding:13px 22px; border-radius:var(--radius);
+    cursor:pointer; display:inline-flex; align-items:center; gap:10px; transition:background .15s ease;
+  }
+  .btn:hover{background:var(--red-dark);}
+  .btn[disabled]{opacity:.4; cursor:default; pointer-events:none;}
+  .btn.ghost{background:transparent; color:var(--ink); border:1px solid var(--ink);}
+  .btn.ghost:hover{background:var(--bg-raised);}
+  .btn.small{padding:9px 16px; font-size:12.5px;}
+
+  /* -------------------------------------------------------------- tabs -- */
+  .chips{display:flex; border:1px solid var(--divider-strong); margin-bottom:8px; flex-wrap:wrap;}
+  .chip{
+    flex:1; min-width:140px; font-size:13.5px; font-weight:600;
+    padding:13px 10px; border:none; border-right:1px solid var(--divider-strong);
+    background:transparent; cursor:pointer; color:var(--ink-soft); transition:all .15s ease;
+  }
+  .chip:last-child{border-right:none;}
+  .chip.selected{background:var(--red); color:#fff;}
+  .chip.small{padding:9px 14px; font-size:12.5px; flex:none; min-width:0;}
+
+  /* ------------------------------------------------------------ panels -- */
+  section.panel{border-top:1px solid var(--divider); padding:44px 0 8px; display:none;}
+  section.panel.active{display:block;}
+  section.panel .eyebrow{
+    display:block; font-size:13px; letter-spacing:.09em; text-transform:uppercase;
+    color:var(--red); font-weight:700; margin-bottom:12px; border:none; padding:0;
+  }
+  h2.panel-title{font-weight:800; text-transform:uppercase; font-size:24px; margin:0 0 8px;}
+  h3.sub-title{font-weight:800; text-transform:uppercase; font-size:16px; margin:40px 0 10px;}
+  p.panel-sub{color:var(--ink-soft); font-size:14.5px; line-height:1.6; margin:0 0 26px; max-width:64ch;}
+  p.note{font-size:12.5px; color:var(--ink-faint); line-height:1.6; margin:8px 0 0;}
+
+  .callout{
+    border:1px dashed var(--divider-strong); padding:16px 18px; margin-bottom:26px;
+    font-size:13px; line-height:1.6; color:var(--ink-soft);
+  }
+  .callout b{color:var(--ink);}
+
+  /* --------------------------------------------------------------- kv -- */
+  .card{background:var(--bg-raised); border:1px solid var(--divider); padding:24px; margin-bottom:20px;}
+  .kv-row{display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--divider); font-size:13px;}
+  .kv-row:last-child{border-bottom:none;}
+  .kv-row .k{color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; font-size:10.5px;}
+  .kv-row .v{color:var(--ink); text-align:right; font-weight:600;}
+
+  /* -------------------------------------------------------------- kpis -- */
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:6px 0 28px;}
+  @media(max-width:780px){.stats{grid-template-columns:1fr 1fr;}}
+  .stat{background:var(--bg-raised); border:1px solid var(--divider); padding:18px;}
+  .stat .num{font-weight:800; font-size:24px; font-variant-numeric:tabular-nums;}
+  .stat .lbl{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin-top:4px;}
+
+  /* ------------------------------------------------------------- table -- */
+  .list-table{background:var(--bg); border:1px solid var(--divider); overflow:hidden; margin-bottom:10px;}
+  .list-row{display:grid; font-size:13px;}
+  .list-row > div{padding:12px 14px; border-bottom:1px solid var(--divider); overflow:hidden;}
+  .list-row:last-child > div{border-bottom:none;}
+  .list-row.head > div{font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:600;}
+  .row-history{grid-template-columns:1.1fr 1.3fr .9fr .9fr .9fr;}
+  .row-grants{grid-template-columns:1.3fr 1.5fr .9fr .9fr .8fr;}
+  .row-ids{grid-template-columns:1.2fr 1.4fr 1.6fr;}
+  @media(max-width:820px){
+    .list-row{grid-template-columns:1fr !important; padding:14px; gap:6px;}
+    .list-row > div{padding:2px 0; border-bottom:none;}
+    .list-row.head{display:none;}
+    .list-row{border-bottom:1px solid var(--divider);}
+  }
+  .status-pill{
+    display:inline-flex; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    border:1px solid currentColor; padding:3px 7px; white-space:nowrap;
+  }
+  .status-pill.issued{color:var(--ink-soft);}
+  .status-pill.delivered{color:var(--ok);}
+  .status-pill.returned{color:var(--ink-faint);}
+  .status-pill.revoked{color:var(--red);}
+  .row-action{font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--red); text-decoration:none; cursor:pointer; margin-top:4px; display:inline-block; background:none; border:1px solid var(--red); padding:5px 9px; font-family:inherit;}
+  .row-action:hover{background:var(--red); color:#fff;}
+  .row-action[disabled]{opacity:.35; cursor:default; pointer-events:none; border-color:var(--ink-faint); color:var(--ink-faint);}
+
+  /* --------------------------------------------------------- addresses -- */
+  .addr-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:22px;}
+  @media(max-width:680px){.addr-grid{grid-template-columns:1fr;}}
+  .addr-card{background:var(--bg-raised); border:1px solid var(--divider); padding:22px; display:flex; flex-direction:column; gap:10px;}
+  .addr-card .label{font-weight:800; font-size:16px; text-transform:uppercase;}
+  .tier-badge{
+    display:inline-flex; align-self:flex-start; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    border:1px solid var(--ink); padding:3px 8px;
+  }
+  .tier-badge.t0{border-color:var(--ink-faint); color:var(--ink-faint);}
+  .tier-badge.t1{border-color:var(--ink-soft); color:var(--ink-soft);}
+  .tier-badge.t2{border-color:var(--ink); color:var(--ink);}
+  .tier-badge.t3{border-color:var(--red); color:var(--red);}
+  .addr-meta{font-size:12px; color:var(--ink-faint);}
+  .addr-card .row-action{align-self:flex-start;}
+
+  .add-binding{border:1px dashed var(--divider-strong); padding:22px; margin-bottom:10px;}
+  .add-binding .fields{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;}
+  @media(max-width:680px){.add-binding .fields{grid-template-columns:1fr;}}
+  .field-label{font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:8px; display:block;}
+  input[type="text"]{
+    width:100%; font:inherit; font-size:13.5px; padding:11px 12px; border:1px solid var(--divider-strong);
+    border-radius:var(--radius); background:var(--bg); color:var(--ink);
+  }
+
+  /* -------------------------------------------------------------- chain -- */
+  .chain-banner{
+    display:none; align-items:center; gap:10px; padding:14px 18px; margin-bottom:18px;
+    font-size:13px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; border:1px solid currentColor;
+  }
+  .chain-banner.show{display:flex;}
+  .chain-banner.ok{color:var(--ok);}
+  .chain-banner.bad{color:var(--red);}
+  .chain-list{display:flex; flex-direction:column; gap:0; border:1px solid var(--divider); margin-bottom:20px;}
+  .chain-row{display:grid; grid-template-columns:.4fr 1fr 1.6fr 1fr; gap:12px; padding:14px 16px; border-bottom:1px solid var(--divider); font-size:12.5px; align-items:center;}
+  .chain-row:last-child{border-bottom:none;}
+  .chain-row.head{font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-faint); font-weight:600; background:var(--bg-raised);}
+  .chain-row.broken{background:rgba(208,2,27,.06); border-left:3px solid var(--red);}
+  .chain-row.verified-ok .chk{color:var(--ok);}
+  .chain-row.broken .chk{color:var(--red); font-weight:700;}
+  @media(max-width:780px){.chain-row{grid-template-columns:1fr;}}
+  .chain-actor{font-weight:700;}
+  .chain-detail{color:var(--ink-soft);}
+  .chain-hash{color:var(--ink-faint);}
+
+  footer{padding:60px 0 20px;}
+  .fine{font-size:11.5px; letter-spacing:.04em; color:var(--ink-faint);}
+
+  @media(prefers-reduced-motion: reduce){*{transition:none !important;}}
+</style>
+</head>
+<body>
+
+<div class="topbar"><img src="./assets/logo-large.png" alt="Ship2MyID"></div>
+<div class="topnav">
+  <a href="./index.html">← Choose a different flow</a>
+  <div class="group">
+    <a href="./consumer-flow.html">See the consumer flow →</a>
+    <a href="./operator-flow.html">See the operator flow →</a>
+    <a href="./merchant-console.html">See the merchant console →</a>
+    <a href="./storefront-demo.html">See the demo storefront →</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="eyebrow">Consumer wallet — live in this page</div>
+    <h1 class="headline">Everything you've granted, in one place.</h1>
+    <p class="lede">Your saved addresses, your delivery history, and every consent you've given a merchant — plus the tamper-evident ledger that proves nothing was quietly added or edited afterward. Runs entirely in this browser; nothing here leaves your device.</p>
+  </header>
+
+  <div class="chips" id="tabs">
+    <button class="chip selected" data-tab="addresses">Addresses</button>
+    <button class="chip" data-tab="history">Delivery history</button>
+    <button class="chip" data-tab="grants">Active grants</button>
+    <button class="chip" data-tab="ledger">What we hold</button>
+  </div>
+
+  <!-- ================================================== ADDRESSES ===== -->
+  <section class="panel active" id="panel-addresses">
+    <div class="eyebrow">01 · Addresses</div>
+    <h2 class="panel-title">Saved bindings</h2>
+    <p class="panel-sub">A binding is a label plus a vouched address. No merchant ever sees this list — each one only ever receives the pairwise identifier below, scoped to that single relationship.</p>
+
+    <div class="card">
+      <h3 class="sub-title" style="margin-top:0;">Your pairwise identifiers</h3>
+      <p class="note" style="margin-bottom:14px;">Not one ID for you — a different one per merchant. Two merchants holding a token for the same person cannot join on it.</p>
+      <div class="list-table">
+        <div class="list-row row-ids head"><div>Merchant</div><div>Your identifier there</div><div>Note</div></div>
+        <div id="ids-table"></div>
+      </div>
+    </div>
+
+    <h3 class="sub-title">Bindings</h3>
+    <div class="addr-grid" id="addr-grid"></div>
+
+    <div class="add-binding">
+      <h3 class="sub-title" style="margin-top:0;">Vouch a new address</h3>
+      <p class="panel-sub" style="margin-bottom:16px;">Tier is a property of this binding, not of you — the same person can hold three addresses at three different tiers.</p>
+      <div class="fields">
+        <div>
+          <span class="field-label">Label</span>
+          <input type="text" id="new-label" placeholder="e.g. Parents' place" />
+        </div>
+        <div>
+          <span class="field-label">Proofing tier</span>
+          <div class="chips" id="tier-picker" style="margin-bottom:0;">
+            <button class="chip small selected" data-tier="1">Tier 1 · Code-by-post</button>
+            <button class="chip small" data-tier="2">Tier 2 · Register match</button>
+            <button class="chip small" data-tier="3">Tier 3 · Door challenge</button>
+          </div>
+        </div>
+      </div>
+      <button class="btn" id="btn-add-binding">Vouch with passkey <span>→</span></button>
+    </div>
+  </section>
+
+  <!-- ==================================================== HISTORY ===== -->
+  <section class="panel" id="panel-history">
+    <div class="eyebrow">02 · Delivery history</div>
+    <h2 class="panel-title">Every shipment routed to you</h2>
+    <p class="panel-sub">Each row is a capability a merchant redeemed, not a tracked location — the merchant that shipped it never held more than what's in the "active grants" tab while it was live.</p>
+
+    <div class="stats" id="history-stats"></div>
+
+    <div class="list-table">
+      <div class="list-row row-history head"><div>Merchant</div><div>Item</div><div>Destination</div><div>Status</div><div>Date</div></div>
+      <div id="history-table"></div>
+    </div>
+  </section>
+
+  <!-- ===================================================== GRANTS ===== -->
+  <section class="panel" id="panel-grants">
+    <div class="eyebrow">03 · Active grants</div>
+    <h2 class="panel-title">Capabilities you can revoke right now</h2>
+    <p class="panel-sub">Every one of these is scoped, expiring, and single-use already. Revoking doesn't file a request with the merchant — it kills the capability at the vault, mid-flight, before anyone tries to redeem it.</p>
+
+    <div class="list-table">
+      <div class="list-row row-grants head"><div>Merchant</div><div>Purpose</div><div>Expires</div><div>Status</div><div></div></div>
+      <div id="grants-table"></div>
+    </div>
+    <p class="note" id="grants-empty" style="display:none;">Nothing currently active — every grant below has been redeemed, returned, or revoked.</p>
+  </section>
+
+  <!-- ===================================================== LEDGER ===== -->
+  <section class="panel" id="panel-ledger">
+    <div class="eyebrow">04 · What we hold</div>
+    <h2 class="panel-title">The consent ledger</h2>
+    <p class="panel-sub">Append-only and hash-chained: each entry's hash covers the entry before it, so editing any row in place breaks the chain from that point on — no blockchain required, just a running hash a stranger can recompute.</p>
+
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;">
+      <button class="btn ghost small" id="btn-verify">Verify chain</button>
+      <button class="btn ghost small" id="btn-tamper">Tamper a row, as if from inside the database</button>
+    </div>
+
+    <div class="chain-banner" id="chain-banner"></div>
+
+    <div class="chain-list">
+      <div class="chain-row head"><div>#</div><div>Actor</div><div>Entry</div><div>Hash</div></div>
+      <div id="chain-body"></div>
+    </div>
+    <p class="note" id="tamper-explainer" style="display:none;">The row above was edited in place — its stored hash was left untouched, exactly what an operator with raw database access could do. Recomputing that row's hash from its current contents no longer matches what was chained at the time; every entry after it still verifies fine against its own stored predecessor, but reproducing this row honestly would mean redoing the chain from here forward.</p>
+  </section>
+
+  <footer>
+    <p class="fine">SHIP2MYID · CONSUMER WALLET · LOCAL SESSION — NOTHING ON THIS PAGE LEAVES YOUR BROWSER</p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const enc = new TextEncoder();
+
+  // ---- crypto helpers (mirrors packages/identity + packages/capability, ----
+  // same as consumer-flow.html) --------------------------------------------
+  async function hmac(keyBytes, msg){
+    const key = await crypto.subtle.importKey("raw", keyBytes, {name:"HMAC", hash:"SHA-256"}, false, ["sign"]);
+    const sig = await crypto.subtle.sign("HMAC", key, enc.encode(msg));
+    return new Uint8Array(sig);
+  }
+  function b32(bytes, chars){
+    const A = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    let out = "";
+    for (let i=0;i<chars;i++) out += A[bytes[i % bytes.length] % A.length];
+    return out;
+  }
+  async function deriveS2ID(root, relyingParty, prefix="MER"){
+    const mac = await hmac(root, "s2id/pairwise/" + relyingParty);
+    const body = b32(mac, 12);
+    return `${prefix}-${body.slice(0,4)}-${body.slice(4,8)}-${body.slice(8,12)}`;
+  }
+  function randomBytes(n){ return crypto.getRandomValues(new Uint8Array(n)); }
+  async function sha256hex(str){
+    const buf = await crypto.subtle.digest("SHA-256", enc.encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  }
+
+  const root = randomBytes(32);
+  const MERCHANTS = [
+    { id: "alba-goods.example", name: "Alba Goods" },
+    { id: "corvid-tools.example", name: "Corvid Tools" },
+    { id: "meridia-mercantile.example", name: "Meridia Mercantile" },
+  ];
+
+  // ------------------------------------------------------------ state ----
+  let bindings = [
+    { label: "Home", tier: 2, vouchedAt: "Mar 14", geoBucket: "MRD-48" },
+    { label: "Office", tier: 1, vouchedAt: "Apr 2", geoBucket: "MRD-12" },
+    { label: "Locker · Corniche Point", tier: 1, vouchedAt: "Jun 9", geoBucket: "MRD-48" },
+  ];
+
+  let shipments = [
+    { merchant: "Alba Goods", item: "Field Notebook — No. 4", destination: "Locker · Corniche Point", status: "delivered", date: "Jun 12", purpose: "delivery", expires: "—" },
+    { merchant: "Corvid Tools", item: "Torque Driver, ¼\"", destination: "Office", status: "returned", date: "May 28", purpose: "return", expires: "—" },
+    { merchant: "Alba Goods", item: "Desk Lamp — Arc 2", destination: "Home", status: "revoked", date: "May 3", purpose: "delivery", expires: "—" },
+    { merchant: "Meridia Mercantile", item: "Ceramic Mug Set", destination: "Home", status: "issued", date: "Jul 24", purpose: "delivery", expires: "Aug 7" },
+  ];
+
+  let ledger = []; // { n, prevHash, hash, actor, action, detail }
+
+  async function appendLedger(actor, action, detail){
+    const n = ledger.length;
+    const prevHash = n === 0 ? "GENESIS" : ledger[n-1].hash;
+    const canonical = JSON.stringify({ n, actor, action, detail });
+    const hash = await sha256hex(prevHash + canonical);
+    ledger.push({ n, prevHash, hash, actor, action, detail });
+  }
+
+  async function seedLedger(){
+    await appendLedger("consumer", "binding.vouched", "Home vouched at Tier 2");
+    await appendLedger("consumer", "binding.vouched", "Office vouched at Tier 1");
+    await appendLedger("consumer", "binding.vouched", "Locker · Corniche Point vouched at Tier 1");
+    await appendLedger("platform", "capability.minted", "Alba Goods — Field Notebook — delivery");
+    await appendLedger("vault", "capability.redeemed", "Alba Goods — Field Notebook — routed to sortation");
+    await appendLedger("consumer", "capability.minted", "Corvid Tools — Torque Driver — return window");
+    await appendLedger("consumer", "capability.revoked", "Alba Goods — Desk Lamp — revoked mid-flight");
+    await appendLedger("platform", "capability.minted", "Meridia Mercantile — Ceramic Mug — delivery");
+  }
+
+  // ------------------------------------------------------------ render ---
+  function tierLabel(t){ return ["Tier 0 · Contact only","Tier 1 · Code-by-post","Tier 2 · Register match","Tier 3 · Door challenge"][t]; }
+
+  async function renderIds(){
+    const rows = await Promise.all(MERCHANTS.map(async m => {
+      const s2id = await deriveS2ID(root, m.id);
+      return `<div class="list-row row-ids"><div>${m.name}</div><div class="mono">${s2id}</div><div style="color:var(--ink-faint); font-size:11.5px;">Cannot be joined against any other merchant's copy</div></div>`;
+    }));
+    document.getElementById("ids-table").innerHTML = rows.join("");
+  }
+
+  function renderAddresses(){
+    document.getElementById("addr-grid").innerHTML = bindings.map((b,i) => `
+      <div class="addr-card">
+        <div class="label">${b.label}</div>
+        <span class="tier-badge t${b.tier}">${tierLabel(b.tier)}</span>
+        <div class="addr-meta">Vouched ${b.vouchedAt} · geo bucket ${b.geoBucket}</div>
+        <button class="row-action" onclick="window.__removeBinding(${i})">Remove binding</button>
+      </div>
+    `).join("");
+  }
+  window.__removeBinding = (i) => {
+    const b = bindings[i];
+    bindings.splice(i,1);
+    appendLedger("consumer", "binding.removed", `${b.label} removed`).then(() => { renderAddresses(); renderLedger(); });
+  };
+
+  function renderHistory(){
+    document.getElementById("history-stats").innerHTML = `
+      <div class="stat"><div class="num">${shipments.length}</div><div class="lbl">Shipments, all time</div></div>
+      <div class="stat"><div class="num">${shipments.filter(s=>s.status==="delivered").length}</div><div class="lbl">Delivered</div></div>
+      <div class="stat"><div class="num">${shipments.filter(s=>s.status==="issued").length}</div><div class="lbl">Currently active</div></div>
+      <div class="stat"><div class="num">${shipments.filter(s=>s.status==="revoked").length}</div><div class="lbl">Revoked</div></div>
+    `;
+    document.getElementById("history-table").innerHTML = shipments.slice().reverse().map(s => `
+      <div class="list-row row-history">
+        <div>${s.merchant}</div>
+        <div>${s.item}</div>
+        <div>${s.destination}</div>
+        <div><span class="status-pill ${s.status}">${s.status}</span></div>
+        <div>${s.date}</div>
+      </div>
+    `).join("");
+  }
+
+  function renderGrants(){
+    const active = shipments.filter(s => s.status === "issued");
+    document.getElementById("grants-table").innerHTML = active.map(s => {
+      const idx = shipments.indexOf(s);
+      return `
+      <div class="list-row row-grants">
+        <div>${s.merchant}</div>
+        <div>${s.purpose === "return" ? "Return" : "Delivery"} — ${s.item}</div>
+        <div>${s.expires}</div>
+        <div><span class="status-pill ${s.status}">${s.status}</span></div>
+        <div><button class="row-action" onclick="window.__revoke(${idx})">Revoke now</button></div>
+      </div>`;
+    }).join("");
+    document.getElementById("grants-empty").style.display = active.length ? "none" : "block";
+  }
+  window.__revoke = (idx) => {
+    const s = shipments[idx];
+    s.status = "revoked";
+    appendLedger("consumer", "capability.revoked", `${s.merchant} — ${s.item} — revoked mid-flight`).then(() => {
+      renderHistory(); renderGrants(); renderLedger();
+    });
+  };
+
+  function renderLedger(){
+    document.getElementById("chain-body").innerHTML = ledger.map(e => `
+      <div class="chain-row" data-n="${e.n}">
+        <div>${e.n}</div>
+        <div class="chain-actor">${e.actor}</div>
+        <div class="chain-detail">${e.action} — ${e.detail}</div>
+        <div class="chain-hash mono">${e.hash.slice(0,14)}…</div>
+      </div>
+    `).join("");
+    document.getElementById("chain-banner").className = "chain-banner";
+    document.getElementById("chain-banner").innerHTML = "";
+    document.getElementById("tamper-explainer").style.display = "none";
+  }
+
+  async function verifyChain(){
+    let firstBreak = -1;
+    for (const e of ledger){
+      const canonical = JSON.stringify({ n: e.n, actor: e.actor, action: e.action, detail: e.detail });
+      const expected = await sha256hex(e.prevHash + canonical);
+      const row = document.querySelector(`.chain-row[data-n="${e.n}"]`);
+      if (expected === e.hash){
+        row.classList.remove("broken");
+        row.classList.add("verified-ok");
+      } else {
+        row.classList.add("broken");
+        row.classList.remove("verified-ok");
+        if (firstBreak === -1) firstBreak = e.n;
+      }
+    }
+    const banner = document.getElementById("chain-banner");
+    if (firstBreak === -1){
+      banner.className = "chain-banner show ok";
+      banner.textContent = `Verified — all ${ledger.length} entries recompute to their stored hash.`;
+    } else {
+      banner.className = "chain-banner show bad";
+      banner.textContent = `Broken at entry ${firstBreak} — recomputed hash no longer matches what was chained.`;
+      document.getElementById("tamper-explainer").style.display = "block";
+    }
+  }
+
+  function tamperRow(){
+    // Simulate an operator editing a row's content directly in the store,
+    // without touching the stored hash — the exact case a hash chain (and
+    // not a mutable audit log) is meant to catch.
+    const target = ledger.find(e => e.action === "capability.redeemed") ?? ledger[Math.min(4, ledger.length-1)];
+    target.detail = target.detail.replace("routed to sortation", "routed to sortation MRD-9F2C1A, weight override 9kg");
+    renderLedger();
+  }
+
+  // -------------------------------------------------------------- tabs --
+  document.querySelectorAll("#tabs .chip").forEach(tab => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll("#tabs .chip").forEach(c => c.classList.remove("selected"));
+      tab.classList.add("selected");
+      document.querySelectorAll("section.panel").forEach(p => p.classList.remove("active"));
+      document.getElementById(`panel-${tab.dataset.tab}`).classList.add("active");
+    });
+  });
+
+  // -------------------------------------------------------- tier picker --
+  let pickedTier = 1;
+  document.querySelectorAll("#tier-picker .chip").forEach(c => {
+    c.addEventListener("click", () => {
+      document.querySelectorAll("#tier-picker .chip").forEach(x => x.classList.remove("selected"));
+      c.classList.add("selected");
+      pickedTier = Number(c.dataset.tier);
+    });
+  });
+
+  document.getElementById("btn-add-binding").addEventListener("click", async () => {
+    const input = document.getElementById("new-label");
+    const label = input.value.trim() || "New address";
+    bindings.push({ label, tier: pickedTier, vouchedAt: new Date().toLocaleDateString(undefined,{month:"short",day:"numeric"}), geoBucket: "MRD-" + (10 + Math.floor(Math.random()*80)) });
+    await appendLedger("consumer", "binding.vouched", `${label} vouched at Tier ${pickedTier}`);
+    input.value = "";
+    renderAddresses();
+    renderLedger();
+  });
+
+  document.getElementById("btn-verify").addEventListener("click", verifyChain);
+  document.getElementById("btn-tamper").addEventListener("click", tamperRow);
+
+  // ------------------------------------------------------------- start ---
+  (async () => {
+    await seedLedger();
+    await renderIds();
+    renderAddresses();
+    renderHistory();
+    renderGrants();
+    renderLedger();
+  })();
+})();
+</script>
+</body>
+</html>
