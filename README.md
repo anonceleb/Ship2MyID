@@ -1,5 +1,7 @@
 # Ship2MyID — Phase 0
 
+[![CI](https://github.com/anonceleb/Ship2MyID/actions/workflows/ci.yml/badge.svg)](https://github.com/anonceleb/Ship2MyID/actions/workflows/ci.yml)
+
 Zone skeleton, envelope crypto, pairwise identifiers, participant registry, capability
 tokens, and the executable privacy invariants.
 
@@ -38,10 +40,13 @@ services/
   platform/    ZONE 2 — orchestration. Holds ciphertext, holds no keys
 adapters/
   postal-meridia/  fictional operator. Delete it; core still builds (INV-8)
+  dakhil-post/     second fictional operator — different address format (locality/
+                   placeName, not postcode) and different key custody (holds no
+                   signing key; proofing proxies to packages/registry)
 tools/
   privacy-lint/    CI gate: core purity, zone-3 shape, log hygiene
   demo/            narrated walkthrough
-db/schema.sql      Postgres with row-level security as the enforcement layer
+docs/schema.sql    target production data model — Postgres + RLS, not wired to any adapter
 tests/invariants/  the privacy claims, executable
 ```
 
@@ -71,6 +76,20 @@ tests/invariants/  the privacy claims, executable
 Both CI gates are proven non-vacuous: injecting `address: string` into `MerchantView`
 makes privacy-lint exit 1, and each invariant asserts the failure mode as well as the
 success path.
+
+**Interop — two operators, not one.** `postal-meridia` alone doesn't prove the
+exchange layer is standards-agnostic rather than shaped around one operator's
+assumptions. `adapters/dakhil-post` is a second, deliberately different
+implementation of the same ports (`SortationPort`, `IdentityProofingPort`):
+its `geoBucketFor` buckets by locality/placeName instead of postcode prefix
+(built for addresses where the postcode is unreliable or absent), and its
+`DakhilIdentity` holds no signing key of its own — it refuses a bare
+self-asserted claim outright and can only raise a subject's tier by verifying
+a signed attestation against `packages/registry`, capped at the attester's own
+tier. `tests/invariants/interop.test.ts` swaps it into `Vault`/`Platform` with
+zero changes to either and checks the two operators' outputs never collide.
+The technical-effect claim this backs: the system works across operators who
+don't trust each other, not just one operator's shape wearing two names.
 
 **[A4] — done.** `packages/labels` mints a COSE_Sign1 label (RFC 8152), Ed25519-signed
 by a rotating operator key, over claims derived from an already-verified capability.
@@ -111,8 +130,11 @@ Stated plainly so they don't get mistaken for design:
 
 - **The vault is TypeScript.** The spec calls for Rust, separately deployed. The
   interface is the contract that rewrite must satisfy; the rewrite is Phase 1.
-- **In-memory stores.** `db/schema.sql` is the real target, RLS included, and the
-  service classes are already shaped as repositories.
+- **In-memory stores.** `docs/schema.sql` is the target production data model,
+  RLS included, and the service classes are already shaped as repositories —
+  but nothing in this repo consumes it yet. No ORM, no pg client, no
+  migrations directory. Wiring a real Postgres adapter behind
+  `packages/core`'s ports is Phase 1 work, not done here.
 - **KMS is in-process.** `Kms.dekFor` / `saltFor` are the seam where an HSM goes.
 - **No SD-JWT yet.** Identity proofing returns a tier through a port; credentials land
   in Phase 1.

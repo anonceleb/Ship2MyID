@@ -1,3 +1,13 @@
+-- TARGET PRODUCTION DATA MODEL — not wired to any adapter yet.
+--
+-- Phase 0-3 run entirely in-memory (packages/core's ConsentLedger, AuditLog,
+-- NonceLedger; services/vault's #records/#bindings maps). No ORM, no pg
+-- client, no migrations directory exist in this repo. This file is the
+-- schema that in-memory shape must survive translating to, kept in sync by
+-- hand: each table below maps directly to one of those in-memory stores, and
+-- each column exists because some invariant in tests/invariants/ needs it
+-- (e.g. platform.projection has no address column because INV-1 forbids one).
+--
 -- Zone 1 (vault) and Zone 2 (platform) schemas.
 -- Enforcement lives in Row-Level Security, not application code: an ORM mistake
 -- must not become a privacy incident.
